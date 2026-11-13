@@ -1,0 +1,8 @@
+# dev profile: adds sample inventory (fake hosts) on top of the schema migrations
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
+
+logging:
+  level:
+    com.euronet.eft.portal: DEBUG

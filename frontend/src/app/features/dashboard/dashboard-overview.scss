@@ -1,0 +1,166 @@
+.status-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  background: var(--app-card);
+  border: 1px solid var(--app-line);
+  box-shadow: var(--shadow);
+  border-left: 6px solid var(--app-line-strong);
+
+  &.green { border-left-color: var(--ok); }
+  &.amber { border-left-color: var(--warn); }
+  &.red { border-left-color: var(--bad); }
+}
+
+.light {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--eu-navy-900);
+
+  span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.red .light span:nth-child(1) { background: #ff5a55; box-shadow: 0 0 8px #ff5a55; }
+.amber .light span:nth-child(2) { background: #ffb020; box-shadow: 0 0 8px #ffb020; }
+.green .light span:nth-child(3) { background: #2bd47d; box-shadow: 0 0 8px #2bd47d; }
+
+.status-text {
+  flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--app-muted);
+  }
+
+  strong {
+    font-size: 22px;
+  }
+}
+
+.red .status-text strong { color: var(--bad); }
+.amber .status-text strong { color: var(--warn); }
+.green .status-text strong { color: var(--ok); }
+
+.status-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.areas {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+
+  &:hover {
+    border-color: var(--eu-navy-400);
+    transform: translateY(-1px);
+  }
+}
+
+.area-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.area-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  color: var(--eu-navy-600);
+}
+
+.area-label {
+  flex: 1;
+  font-weight: 600;
+}
+
+.area-metric {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.area-headline {
+  color: var(--app-muted);
+  font-size: 13px;
+  min-height: 36px;
+}
+
+.area-link {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--eu-navy-600);
+}
+
+.issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--app-line);
+  }
+
+  li:last-child {
+    border-bottom: 0;
+  }
+}
+
+.issue-title {
+  font-weight: 600;
+  color: var(--app-text);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.issue-meta {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.all-clear {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ok);
+  font-weight: 600;
+}

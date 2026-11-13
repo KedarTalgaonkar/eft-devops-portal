@@ -1,0 +1,47 @@
+# Test runners (nothing installed on the host):
+#   docker compose -f compose.test.yml run --rm backend-test
+#   docker compose -f compose.test.yml run --rm frontend-test
+#   docker compose -f compose.test.yml down -v
+name: eft-devops-portal-test
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: eftportal_test
+      POSTGRES_USER: eft
+      POSTGRES_PASSWORD: eft
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eft -d eftportal_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend-test:
+    image: maven:3.9-eclipse-temurin-25
+    working_dir: /src
+    # -Dtest.excludedGroups= also runs the database-backed tests (the image build skips them)
+    command: ["mvn", "-B", "verify", "-Dtest.excludedGroups="]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/eftportal_test
+      DB_USER: eft
+      DB_PASSWORD: eft
+    volumes:
+      - ./backend:/src
+      - m2:/root/.m2
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend-test:
+    image: node:24-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm ci && npx ng test --watch=false"]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  m2:

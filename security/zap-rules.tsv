@@ -1,0 +1,2 @@
+10109	IGNORE	(Modern Web Application: informational only; the scan already uses the AJAX spider)
+2	WARN	(Private IP Disclosure: the inventory lists internal Tomcat hosts by design; accepted only behind Entra ID sign-in, phase 4)

@@ -1,0 +1,67 @@
+<div class="filters">
+  <input class="search" type="search" placeholder="Search project, client, owner or Jenkins job" aria-label="Search pipelines"
+         [value]="search()" (input)="search.set($any($event.target).value)" />
+  <label class="row">
+    <input type="checkbox" [checked]="onlyFailing()" (change)="onlyFailing.set($any($event.target).checked)" />
+    Only pipelines with failures
+  </label>
+  <button class="btn" type="button" (click)="metrics.reload()">Refresh</button>
+</div>
+
+<div class="grid">
+  <app-kpi-card label="Total builds" icon="build" [value]="totals().totalBuilds" [hint]="rows().length + ' pipelines shown'" />
+  <app-kpi-card label="Success" icon="check_circle" tone="ok" [value]="totals().success" />
+  <app-kpi-card label="Failed" icon="error" tone="bad" [value]="totals().failed" />
+  <app-kpi-card label="Aborted" icon="block" tone="warn" [value]="totals().aborted" />
+</div>
+
+<app-load-state [loading]="metrics.isLoading()" [error]="metrics.error()" [empty]="metrics.hasValue() && rows().length === 0"
+                what="pipeline metrics" emptyText="No pipelines match these filters." (retry)="metrics.reload()" />
+
+@if (rows().length) {
+  <div class="table-wrap">
+    <table class="data" aria-label="EFT pipeline metrics">
+      <thead>
+        <tr>
+          <th class="sortable" [attr.aria-sort]="ariaSort('project')" (click)="sortBy('project')">Project{{ sortMark('project') }}</th>
+          <th class="sortable" [attr.aria-sort]="ariaSort('environment')" (click)="sortBy('environment')">Environment{{ sortMark('environment') }}</th>
+          <th class="num sortable" [attr.aria-sort]="ariaSort('totalBuilds')" (click)="sortBy('totalBuilds')">Total Builds{{ sortMark('totalBuilds') }}</th>
+          <th class="num sortable" [attr.aria-sort]="ariaSort('success')" (click)="sortBy('success')">Success{{ sortMark('success') }}</th>
+          <th class="num sortable" [attr.aria-sort]="ariaSort('failed')" (click)="sortBy('failed')">Failed{{ sortMark('failed') }}</th>
+          <th class="num sortable" [attr.aria-sort]="ariaSort('aborted')" (click)="sortBy('aborted')">Aborted{{ sortMark('aborted') }}</th>
+          <th class="num sortable" [attr.aria-sort]="ariaSort('successRate')" (click)="sortBy('successRate')">Success %{{ sortMark('successRate') }}</th>
+          <th>Last build</th>
+          <th>Owner</th>
+          <th>Jenkins job</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.applicationId + r.environment) {
+          <tr class="clickable" tabindex="0" (click)="openBuilds(r)" (keydown.enter)="openBuilds(r)">
+            <td><strong>{{ r.project }}</strong> <span class="muted">· {{ r.client }}</span></td>
+            <td>{{ envs.name(r.environment) }}</td>
+            @if (r.error) {
+              <td colspan="5" class="bad wrap">Jenkins unavailable: {{ r.error }}</td>
+            } @else {
+              <td class="num">{{ r.totalBuilds }}</td>
+              <td class="num ok">{{ r.success }}</td>
+              <td class="num" [class.bad]="r.failed > 0">{{ r.failed }}</td>
+              <td class="num" [class.warn]="r.aborted > 0">{{ r.aborted }}</td>
+              <td class="num">{{ r.successRate === null ? '—' : (r.successRate | number: '1.1-1') }}</td>
+            }
+            <td>
+              @if (r.lastBuild; as b) {
+                <app-status-chip [status]="b.result" />
+                <span class="muted"> #{{ b.number }} · {{ b.startedAt | date: 'dd MMM HH:mm' }}</span>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td>{{ r.owner ?? '—' }}</td>
+            <td class="mono muted">{{ r.jenkinsJob }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

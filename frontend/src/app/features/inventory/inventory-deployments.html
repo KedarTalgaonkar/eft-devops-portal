@@ -1,0 +1,102 @@
+<div class="filters">
+  <app-env-filter [(value)]="env" />
+  <input class="search" type="search" placeholder="Search application, client, owner, context, URL, job or repository" aria-label="Search deployment paths"
+         [value]="search()" (input)="search.set($any($event.target).value)" />
+  <label class="row">
+    <input type="checkbox" [checked]="onlyPending()" (change)="onlyPending.set($any($event.target).checked)" /> Setup pending only
+  </label>
+  <input #file type="file" accept=".xlsx" hidden (change)="upload(file)" />
+  <button class="btn primary" type="button" [disabled]="uploading()" (click)="file.click()">
+    <mat-icon>upload_file</mat-icon> {{ uploading() ? 'Importing…' : 'Import Excel' }}
+  </button>
+</div>
+
+@if (lastImport(); as r) {
+  <div class="card result" role="status">
+    <strong>{{ r.fileName }}</strong>
+    <span>{{ r.sheetsRead }} sheets · {{ r.rowsRead }} deployment paths read · applications {{ r.applicationsCreated }} new /
+      {{ r.applicationsUpdated }} updated · paths {{ r.deploymentsCreated }} new / {{ r.deploymentsUpdated }} updated</span>
+    @if (r.newEnvironments.length) {
+      <span class="info">New environments registered: {{ r.newEnvironments.join(', ') }}</span>
+    }
+    @if (r.warnings.length) {
+      <ul class="warn">
+        @for (w of r.warnings; track w) {
+          <li>{{ w }}</li>
+        }
+      </ul>
+    }
+  </div>
+}
+
+<app-load-state [loading]="deployments.isLoading()" [error]="deployments.error()" [empty]="deployments.hasValue() && rows().length === 0"
+                what="the inventory" emptyText="No deployment paths match. Use Import Excel to load the Tomcat projects workbook."
+                (retry)="deployments.reload()" />
+
+@if (rows().length) {
+  <div class="table-wrap">
+    <table class="data" aria-label="Deployment paths">
+      <thead>
+        <tr>
+          <th>Application</th><th>Client</th><th>Owner</th><th>Env</th><th>Platform</th><th>Context</th><th>URL</th>
+          <th>Tomcat</th><th>Java</th><th>Tomcat admin</th><th>build.xml</th><th>Jenkins job</th><th>Repositories</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of rows(); track d.id) {
+          <tr>
+            <td><strong>{{ d.application }}</strong></td>
+            <td>{{ d.client }}</td>
+            <td>{{ d.owner ?? '—' }}</td>
+            <td>{{ envs.name(d.environment) }}</td>
+            <td class="muted">{{ d.platform }}</td>
+            <td class="mono">{{ d.contextName || '—' }}</td>
+            <td>
+              @if (d.contextUrl) {
+                <a class="mono" [href]="d.contextUrl" target="_blank" rel="noopener">{{ d.baseUrl }}</a>
+              } @else { — }
+            </td>
+            <td class="mono">{{ d.tomcatVersion ?? '—' }}</td>
+            <td class="mono" [class.warn]="d.javaVersion?.startsWith('8')">{{ d.javaVersion ?? '—' }}</td>
+            <td [class.ok]="d.tomcatAdminDone" [class.warn]="!d.tomcatAdminDone">{{ d.tomcatAdminDone ? 'Done' : 'Pending' }}</td>
+            <td [class.ok]="d.buildXmlDone" [class.warn]="!d.buildXmlDone">{{ d.buildXmlDone ? 'Done' : 'Pending' }}</td>
+            <td>
+              @if (editingJob() === d.id) {
+                <span class="inline">
+                  <input #job [value]="d.jenkinsJob ?? ''" [placeholder]="d.effectiveJenkinsJob" aria-label="Jenkins job"
+                         (keydown.enter)="saveJob(d, job.value)" (keydown.escape)="editingJob.set(null)" />
+                  <button class="icon-btn" type="button" aria-label="Save Jenkins job" (click)="saveJob(d, job.value)"><mat-icon>check</mat-icon></button>
+                  <button class="icon-btn" type="button" aria-label="Cancel" (click)="editingJob.set(null)"><mat-icon>close</mat-icon></button>
+                </span>
+              } @else {
+                <span class="inline">
+                  <span class="mono" [class.muted]="!d.jenkinsJob" [matTooltip]="d.jenkinsJob ? 'Set in the portal' : 'From the naming pattern'">{{ d.effectiveJenkinsJob }}</span>
+                  <button class="icon-btn" type="button" aria-label="Edit Jenkins job" (click)="editingJob.set(d.id)"><mat-icon>edit</mat-icon></button>
+                </span>
+              }
+            </td>
+            <td>
+              @if (editingRepos() === d.id) {
+                <span class="inline">
+                  <input #repos [value]="d.repositories.join(', ')" placeholder="org/repo, org/other" aria-label="Repositories"
+                         (keydown.enter)="saveRepos(d, repos.value)" (keydown.escape)="editingRepos.set(null)" />
+                  <button class="icon-btn" type="button" aria-label="Save repositories" (click)="saveRepos(d, repos.value)"><mat-icon>check</mat-icon></button>
+                  <button class="icon-btn" type="button" aria-label="Cancel" (click)="editingRepos.set(null)"><mat-icon>close</mat-icon></button>
+                </span>
+              } @else {
+                <span class="inline">
+                  @for (r of d.repositories; track r) {
+                    <span class="tag mono">{{ r }}</span>
+                  } @empty {
+                    <span class="faint">none</span>
+                  }
+                  <button class="icon-btn" type="button" aria-label="Edit repositories" (click)="editingRepos.set(d.id)"><mat-icon>edit</mat-icon></button>
+                </span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

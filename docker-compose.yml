@@ -1,0 +1,74 @@
+# Prod-like stack:  docker compose up --build -d
+#   frontend (nginx) http://localhost:8081  ->  backend http://localhost:8080  ->  postgres
+name: eft-devops-portal
+
+x-integrations: &integrations
+  JENKINS_MODE: ${JENKINS_MODE:-mock}
+  JENKINS_URL: ${JENKINS_URL:-}
+  JENKINS_USER: ${JENKINS_USER:-}
+  JENKINS_TOKEN: ${JENKINS_TOKEN:-}
+  JENKINS_JOB_PATTERN: ${JENKINS_JOB_PATTERN:-}
+  GITHUB_MODE: ${GITHUB_MODE:-mock}
+  GITHUB_URL: ${GITHUB_URL:-https://api.github.com}
+  GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+  SONAR_MODE: ${SONAR_MODE:-mock}
+  SONAR_URL: ${SONAR_URL:-}
+  SONAR_TOKEN: ${SONAR_TOKEN:-}
+  ARTIFACTORY_MODE: ${ARTIFACTORY_MODE:-mock}
+  ARTIFACTORY_URL: ${ARTIFACTORY_URL:-}
+  ARTIFACTORY_TOKEN: ${ARTIFACTORY_TOKEN:-}
+  MONITORING_MODE: ${MONITORING_MODE:-mock}
+  GRAFANA_URL: ${GRAFANA_URL:-}
+  GRAFANA_TOKEN: ${GRAFANA_TOKEN:-}
+  PROMETHEUS_URL: ${PROMETHEUS_URL:-}
+  SBOM_MODE: ${SBOM_MODE:-mock}
+  HEALTH_PROBE_MODE: ${HEALTH_PROBE_MODE:-mock}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eftportal}
+      POSTGRES_USER: ${POSTGRES_USER:-eft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eft}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-}
+    environment:
+      <<: *integrations
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-eftportal}
+      DB_USER: ${POSTGRES_USER:-eft}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-eft}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

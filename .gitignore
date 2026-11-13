@@ -1,0 +1,20 @@
+# env / secrets
+.env
+
+# backend
+backend/target/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# local data files (the real inventory contains internal hosts)
+*.xlsx

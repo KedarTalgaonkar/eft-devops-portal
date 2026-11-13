@@ -1,0 +1,32 @@
+# OWASP ZAP baseline scan (passive checks, AJAX spider for the Angular routes) against the running stack.
+#   docker compose up -d                                   # stack must be running
+#   docker compose -f compose.security.yml run --rm zap
+# Report: security/reports/zap-baseline.html. Exit code 0 = pass, 1 = failures, 2 = warnings only.
+# Rule decisions (ignored / accepted warnings) live in security/zap-rules.tsv.
+name: eft-devops-portal-security
+
+services:
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    volumes:
+      - ./security:/zap/wrk:rw
+    command:
+      - zap-baseline.py
+      - -t
+      - http://frontend/
+      - -j
+      - -m
+      - "3"
+      - -c
+      - zap-rules.tsv
+      - -r
+      - reports/zap-baseline.html
+      - -J
+      - reports/zap-baseline.json
+    networks:
+      - portal
+
+networks:
+  portal:
+    name: eft-devops-portal_default
+    external: true

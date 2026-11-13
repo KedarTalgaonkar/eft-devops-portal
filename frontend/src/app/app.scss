@@ -1,0 +1,122 @@
+.shell {
+  height: 100dvh;
+  background: var(--app-bg);
+}
+
+.nav {
+  width: 256px;
+  background: var(--eu-navy-900);
+  color: #fff;
+  border-right: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .nav .mat-drawer-inner-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+nav {
+  flex: 1;
+  padding: 10px 12px;
+  overflow-y: auto;
+}
+
+.group {
+  margin-top: 14px;
+}
+
+.group-label {
+  padding: 0 10px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+
+  mat-icon {
+    font-size: 19px;
+    width: 19px;
+    height: 19px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
+  &.active {
+    background: var(--eu-navy-600);
+    color: #fff;
+    box-shadow: inset 3px 0 0 var(--eu-teal);
+  }
+}
+
+.foot {
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.mode {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--eu-saffron);
+  font-weight: 600;
+}
+
+.mode.live {
+  background: rgba(0, 163, 161, 0.18);
+  color: var(--eu-teal);
+}
+
+.foot-note {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.content {
+  background: var(--app-bg);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--eu-navy-900);
+}
+
+.menu {
+  background: none;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  display: inline-flex;
+}
