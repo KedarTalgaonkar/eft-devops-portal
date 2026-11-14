@@ -2,6 +2,7 @@ import { Component, computed, inject, input, linkedSignal, signal } from '@angul
 import { DatePipe } from '@angular/common';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { apiUrl } from '../../core/api';
+import { Auth } from '../../core/auth';
 import { Environments } from '../../core/environments';
 import { HealthState } from '../../core/models';
 import { EnvFilter } from '../../shared/env-filter';
@@ -22,7 +23,9 @@ import { ServiceHealth } from './dashboard.models';
       </select>
       <input class="search" type="search" placeholder="Search application, context, URL or owner" aria-label="Search services"
              [value]="search()" (input)="search.set($any($event.target).value)" />
-      <button class="btn primary" type="button" [disabled]="probing()" (click)="probe()">{{ probing() ? 'Probing…' : 'Probe now' }}</button>
+      @if (canProbe) {
+        <button class="btn primary" type="button" [disabled]="probing()" (click)="probe()">{{ probing() ? 'Probing…' : 'Probe now' }}</button>
+      }
     </div>
 
     <div class="grid">
@@ -65,6 +68,7 @@ import { ServiceHealth } from './dashboard.models';
 export class DashboardServicesPage {
   private readonly http = inject(HttpClient);
   protected readonly envs = inject(Environments);
+  protected readonly canProbe = inject(Auth).can('EDITOR');
 
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');

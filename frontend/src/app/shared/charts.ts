@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 /** Tiny inline trend line for KPI cards. */
 @Component({
@@ -61,7 +62,7 @@ export interface StackPoint {
       </div>
       <div class="bars">
         @for (p of points(); track p.label) {
-          <div class="col" [title]="tooltip(p)">
+          <div class="col" [matTooltip]="tooltip(p)">
             @for (s of series(); track s.key) {
               @if (p.values[s.key]) {
                 <div class="seg" [style.height.%]="(p.values[s.key] / max()) * 100" [style.background]="s.color"></div>
@@ -90,7 +91,7 @@ export interface StackPoint {
     .col:hover { filter: brightness(1.12); }
     .x { display: flex; justify-content: space-between; font-size: 11px; color: var(--app-faint); padding-left: 32px; margin-top: 4px; }
   `,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, MatTooltipModule],
 })
 export class StackedBars {
   readonly series = input.required<StackSeries[]>();
@@ -175,11 +176,12 @@ export interface BarItem {
 /** Ranked horizontal bars ("top N" lists). */
 @Component({
   selector: 'app-bar-list',
+  imports: [MatTooltipModule],
   template: `
     <ul>
       @for (b of items(); track b.label) {
         <li>
-          <div class="head"><span class="label" [title]="b.label">{{ b.label }}</span><b class="num">{{ b.value }}{{ unit() }}</b></div>
+          <div class="head"><span class="label" [matTooltip]="b.label" [matTooltipDisabled]="b.label.length < 28">{{ b.label }}</span><b class="num">{{ b.value }}{{ unit() }}</b></div>
           <div class="track"><div class="fill" [style.width.%]="(b.value / max()) * 100" [style.background]="b.color ?? color()"></div></div>
           @if (b.hint) {
             <div class="hint">{{ b.hint }}</div>

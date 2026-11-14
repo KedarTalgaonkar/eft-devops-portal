@@ -117,7 +117,8 @@ public class InventoryService {
             Deployment d = deps.get(c.getDeploymentId());
             return new ChangeView(c.getId(), c.getApplicationId(), a == null ? null : a.getName(), a == null ? null : a.getClient(),
                     c.getDeploymentId(), d == null ? null : d.getEnvironment(), d == null ? null : d.getContextName(),
-                    c.getChangeType(), c.getField(), c.getOldValue(), c.getNewValue(), c.getSource(), c.getChangedAt());
+                    c.getChangeType(), c.getField(), c.getOldValue(), c.getNewValue(), c.getSource(), c.getChangedBy(),
+                    c.getChangedAt());
         }).toList();
     }
 

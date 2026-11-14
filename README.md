@@ -43,18 +43,26 @@ docker compose ps             # wait until backend and frontend are "healthy"
 
 | URL | What |
 |---|---|
-| http://localhost:8081 | the portal |
-| http://localhost:8080/swagger-ui.html | REST API (Swagger UI) |
+| http://localhost:8081 | the portal (sign-in required) |
+| http://localhost:8180 | local Keycloak, the development stand-in for Entra ID |
+| http://localhost:8081/swagger-ui.html | REST API (Swagger UI, administrators) |
 | http://localhost:8080/actuator/health | backend health |
 
 The `dev` profile (default) loads a small sample inventory with fake hosts, so every page has data.
 
-### Load the real inventory
-Upload the *Jenkins Automation - Tomcat Based Projects* workbook on the **Inventory** page, or:
+### Sign in
+* **SSO:** click *Sign in with SSO*. Locally this is Keycloak with test users `viewer`, `editor` and `admin`
+  (passwords in [docs/security.md](docs/security.md#local-keycloak-development-only)). In production it is Microsoft Entra ID.
+* **Portal account:** *Use a local account instead*. There is no default password: create the first administrator by
+  setting `PORTAL_BOOTSTRAP_ADMIN_USERNAME` / `PORTAL_BOOTSTRAP_ADMIN_PASSWORD` in `.env` before the first start.
+  The password must be changed at first sign-in; then remove it from `.env`. Further accounts: **Administration → Users**.
 
-```bash
-curl -F "file=@Jenkins Automation - Tomcat Based Projects_old.xlsx" http://localhost:8080/api/inventory/import
-```
+Roles: Viewer (read), Editor (import and edit), Admin (environments, users, audit log). Details, Entra ID setup and all
+security controls: [docs/security.md](docs/security.md).
+
+### Load the real inventory
+Sign in as an Editor or Admin and upload the *Jenkins Automation - Tomcat Based Projects* workbook with
+**Import Excel** on **Application inventory → Deployment paths**.
 
 Each sheet is an owner; each row's SIT and UAT blocks become deployments. Importing again updates the rows and never
 deletes anything. Keep the real workbook out of git (it holds internal IPs; `*.xlsx` is git-ignored).
@@ -91,7 +99,7 @@ The backend image build also runs the unit tests (tests tagged `db` run only in 
 ```bash
 docker compose -f compose.security.yml run --rm zap
 ```
-Latest result: 0 failures, 60 passes, 1 accepted warning. Details, controls and open items: [docs/security.md](docs/security.md).
+Latest result (with sign-in enabled): 0 failures, 60 passes, 1 accepted warning. Details, controls and open items: [docs/security.md](docs/security.md).
 
 ## Behind a corporate proxy or mirror
 If Maven Central or npmjs is blocked inside containers, set `MAVEN_MIRROR_URL` and/or `NPM_REGISTRY` in `.env`
@@ -108,4 +116,5 @@ docker-compose.yml  compose.dev.yml  compose.test.yml  .env.example
 ## Roadmap
 * Phase 2: live GitHub and SonarQube clients.
 * Phase 3: live Artifactory, Grafana/Prometheus and SBOM (CycloneDX + Trivy/Dependency-Track); stored history for trends.
-* Phase 4: Entra ID sign-in and roles, images in Artifactory, OpenShift deployment, CI for this repo.
+* Phase 4: images in Artifactory, OpenShift deployment, CI for this repo, authenticated ZAP scan.
+  (Sign-in with Entra ID / portal accounts and roles: done.)

@@ -1,5 +1,8 @@
 # Prod-like stack:  docker compose up --build -d
-#   frontend (nginx) http://localhost:8081  ->  backend http://localhost:8080  ->  postgres
+#   browser -> frontend (nginx) http://localhost:8081 -> backend :8080 -> postgres
+#   sign-in: local Keycloak on http://localhost:8180 (stands in for Microsoft Entra ID), or local accounts
+# For Entra ID set SPRING_PROFILES_ACTIVE=sso-entra (+ ENTRA_TENANT_ID, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET)
+# and start without the local identity provider:  docker compose up -d postgres backend frontend
 name: eft-devops-portal
 
 x-integrations: &integrations
@@ -24,6 +27,24 @@ x-integrations: &integrations
   SBOM_MODE: ${SBOM_MODE:-mock}
   HEALTH_PROBE_MODE: ${HEALTH_PROBE_MODE:-mock}
 
+x-security: &security
+  # sign-in
+  ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+  OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+  OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+  # local Keycloak only (sso-dev profile); must match docker/keycloak/eft-realm.json
+  KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-eft-portal-dev-secret}
+  PORTAL_SSO_LABEL: ${PORTAL_SSO_LABEL:-}
+  PORTAL_LOCAL_LOGIN: ${PORTAL_LOCAL_LOGIN:-true}
+  PORTAL_DEFAULT_ROLE: ${PORTAL_DEFAULT_ROLE:-VIEWER}
+  PORTAL_BOOTSTRAP_ADMIN_USERNAME: ${PORTAL_BOOTSTRAP_ADMIN_USERNAME:-admin}
+  PORTAL_BOOTSTRAP_ADMIN_PASSWORD: ${PORTAL_BOOTSTRAP_ADMIN_PASSWORD:-}
+  # sessions and cookies
+  PORTAL_COOKIE_SECURE: ${PORTAL_COOKIE_SECURE:-false}
+  PORTAL_SESSION_IDLE_TIMEOUT: ${PORTAL_SESSION_IDLE_TIMEOUT:-30m}
+  PORTAL_SESSION_MAX_AGE: ${PORTAL_SESSION_MAX_AGE:-10h}
+  PORTAL_API_DOCS: ${PORTAL_API_DOCS:-true}
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -40,22 +61,46 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Local identity provider for development (Microsoft Entra ID in production). Test users: see docs/security.md
+  keycloak:
+    image: keycloak/keycloak:26.8
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-kcadmin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me-local-only}
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./docker/keycloak/eft-realm.json:/opt/keycloak/data/import/eft-realm.json:ro
+    ports:
+      - "127.0.0.1:8180:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       args:
         MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-}
     environment:
-      <<: *integrations
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      <<: [*integrations, *security]
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev,sso-dev}
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-eftportal}
       DB_USER: ${POSTGRES_USER:-eft}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-eft}
     depends_on:
       postgres:
         condition: service_healthy
+    # only reachable from this machine: users go through nginx (headers, rate limits)
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
 
   frontend:
@@ -67,7 +112,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "8081:80"
+      - "${PORTAL_BIND_ADDRESS:-127.0.0.1}:8081:80"
     restart: unless-stopped
 
 volumes:

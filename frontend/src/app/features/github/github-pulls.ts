@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { ago } from '../../core/models';
 import { LoadState } from '../../shared/load-state';
@@ -10,7 +11,7 @@ import { PullRequestInfo } from './github.models';
 /** Support view: pull requests across team repositories, oldest waiting first. */
 @Component({
   selector: 'app-github-pulls',
-  imports: [DatePipe, TitleCasePipe, LoadState, StatusChip],
+  imports: [DatePipe, TitleCasePipe, MatTooltipModule, LoadState, StatusChip],
   template: `
     <div class="filters">
       <div class="chips" role="group" aria-label="Pull request state">
@@ -36,7 +37,7 @@ import { PullRequestInfo } from './github.models';
                 <td>{{ p.author }}</td>
                 <td><app-status-chip [status]="p.state" /></td>
                 <td class="num" [class.warn]="p.reviewers === 0">{{ p.reviewers }}</td>
-                <td [title]="(p.createdAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(p.createdAt) }}</td>
+                <td [matTooltip]="(p.createdAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(p.createdAt) }}</td>
                 <td>{{ ago(p.updatedAt) }}</td>
               </tr>
             }

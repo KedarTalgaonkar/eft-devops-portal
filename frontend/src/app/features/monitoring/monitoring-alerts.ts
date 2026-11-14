@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { ago } from '../../core/models';
 import { LoadState } from '../../shared/load-state';
@@ -10,7 +11,7 @@ import { AlertInfo } from './monitoring.models';
 /** Support view: all firing and pending alerts with their labels. */
 @Component({
   selector: 'app-monitoring-alerts',
-  imports: [DatePipe, LoadState, StatusChip],
+  imports: [DatePipe, MatTooltipModule, LoadState, StatusChip],
   template: `
     <div class="filters">
       <div class="chips" role="group" aria-label="Alert state">
@@ -34,7 +35,7 @@ import { AlertInfo } from './monitoring.models';
                 <td class="wrap">{{ a.summary }}</td>
                 <td class="mono muted wrap">{{ labels(a) }}</td>
                 <td>{{ a.source }}</td>
-                <td [title]="(a.startsAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(a.startsAt) }}</td>
+                <td [matTooltip]="(a.startsAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(a.startsAt) }}</td>
               </tr>
             }
           </tbody>

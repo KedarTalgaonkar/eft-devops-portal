@@ -5,10 +5,12 @@
   <label class="row">
     <input type="checkbox" [checked]="onlyPending()" (change)="onlyPending.set($any($event.target).checked)" /> Setup pending only
   </label>
-  <input #file type="file" accept=".xlsx" hidden (change)="upload(file)" />
-  <button class="btn primary" type="button" [disabled]="uploading()" (click)="file.click()">
-    <mat-icon>upload_file</mat-icon> {{ uploading() ? 'Importing…' : 'Import Excel' }}
-  </button>
+  @if (canEdit) {
+    <input #file type="file" accept=".xlsx" hidden (change)="upload(file)" />
+    <button class="btn primary" type="button" [disabled]="uploading()" (click)="file.click()">
+      <mat-icon>upload_file</mat-icon> {{ uploading() ? 'Importing…' : 'Import Excel' }}
+    </button>
+  }
 </div>
 
 @if (lastImport(); as r) {
@@ -71,7 +73,9 @@
               } @else {
                 <span class="inline">
                   <span class="mono" [class.muted]="!d.jenkinsJob" [matTooltip]="d.jenkinsJob ? 'Set in the portal' : 'From the naming pattern'">{{ d.effectiveJenkinsJob }}</span>
-                  <button class="icon-btn" type="button" aria-label="Edit Jenkins job" (click)="editingJob.set(d.id)"><mat-icon>edit</mat-icon></button>
+                  @if (canEdit) {
+                    <button class="icon-btn" type="button" aria-label="Edit Jenkins job" matTooltip="Set the Jenkins job" (click)="editingJob.set(d.id)"><mat-icon>edit</mat-icon></button>
+                  }
                 </span>
               }
             </td>
@@ -90,7 +94,9 @@
                   } @empty {
                     <span class="faint">none</span>
                   }
-                  <button class="icon-btn" type="button" aria-label="Edit repositories" (click)="editingRepos.set(d.id)"><mat-icon>edit</mat-icon></button>
+                  @if (canEdit) {
+                    <button class="icon-btn" type="button" aria-label="Edit repositories" matTooltip="Edit repositories" (click)="editingRepos.set(d.id)"><mat-icon>edit</mat-icon></button>
+                  }
                 </span>
               }
             </td>

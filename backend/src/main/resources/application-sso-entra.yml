@@ -1,0 +1,25 @@
+# Single sign-on with Microsoft Entra ID (production). Activate with SPRING_PROFILES_ACTIVE=...,sso-entra
+# App registration: Web platform, redirect URI https://<portal-host>/login/oauth2/code/sso,
+# front-channel logout URL https://<portal-host>/login, app roles Portal.Viewer / Portal.Editor / Portal.Admin.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          sso:
+            provider: entra
+            client-name: Microsoft Entra ID
+            client-id: ${OIDC_CLIENT_ID}
+            client-secret: ${OIDC_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,email
+        provider:
+          entra:
+            # discovery: endpoints, signing keys and the expected issuer come from the tenant metadata
+            issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+            user-name-attribute: preferred_username
+
+portal:
+  security:
+    sso-label: ${PORTAL_SSO_LABEL:Sign in with Microsoft}

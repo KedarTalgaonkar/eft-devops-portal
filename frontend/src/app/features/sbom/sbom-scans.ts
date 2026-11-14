@@ -2,6 +2,7 @@ import { Component, computed, inject, input, linkedSignal, signal } from '@angul
 import { DatePipe } from '@angular/common';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { apiUrl } from '../../core/api';
+import { Auth } from '../../core/auth';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { ScanView, VulnerabilityView } from './sbom.models';
@@ -11,11 +12,13 @@ import { ScanView, VulnerabilityView } from './sbom.models';
   selector: 'app-sbom-scans',
   imports: [DatePipe, LoadState, StatusChip],
   template: `
-    <form class="filters" (submit)="$event.preventDefault(); run(project.value, version.value)">
-      <input #project class="search" placeholder="Project, e.g. prepaid-qr-api" aria-label="Project" required />
-      <input #version class="search" placeholder="Version, e.g. 1.4.2" aria-label="Version" required />
-      <button class="btn primary" type="submit" [disabled]="scanning()">{{ scanning() ? 'Scanning…' : 'Generate SBOM & scan' }}</button>
-    </form>
+    @if (canScan) {
+      <form class="filters" (submit)="$event.preventDefault(); run(project.value, version.value)">
+        <input #project class="search" placeholder="Project, e.g. prepaid-qr-api" aria-label="Project" required maxlength="200" />
+        <input #version class="search" placeholder="Version, e.g. 1.4.2" aria-label="Version" required maxlength="100" />
+        <button class="btn primary" type="submit" [disabled]="scanning()">{{ scanning() ? 'Scanning…' : 'Generate SBOM & scan' }}</button>
+      </form>
+    }
 
     <app-load-state [loading]="scans.isLoading()" [error]="scans.error()" [empty]="scans.hasValue() && scans.value().length === 0"
                     what="scans" emptyText="No scans yet. Enter a project and version above." (retry)="scans.reload()" />
@@ -75,6 +78,7 @@ import { ScanView, VulnerabilityView } from './sbom.models';
 })
 export class SbomScansPage {
   private readonly http = inject(HttpClient);
+  protected readonly canScan = inject(Auth).can('EDITOR');
   readonly scan = input<string>();
   protected readonly selected = linkedSignal<number | null>(() => (this.scan() ? Number(this.scan()) : null));
   protected readonly scanning = signal(false);

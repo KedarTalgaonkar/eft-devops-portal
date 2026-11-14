@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Sparkline } from './charts';
 
 /**
@@ -8,7 +9,7 @@ import { Sparkline } from './charts';
  */
 @Component({
   selector: 'app-kpi-card',
-  imports: [MatIconModule, Sparkline],
+  imports: [MatIconModule, MatTooltipModule, Sparkline],
   template: `
     <div class="card kpi" [class]="'card kpi tone-' + (tone() ?? 'none')">
       <div class="top">
@@ -19,7 +20,7 @@ import { Sparkline } from './charts';
           {{ label() }}
         </span>
         @if (deltaText(); as d) {
-          <span class="delta" [class.good]="deltaGood() === true" [class.bad]="deltaGood() === false" [title]="'vs previous period: ' + previous()">
+          <span class="delta" [class.good]="deltaGood() === true" [class.bad]="deltaGood() === false" [matTooltip]="'Previous period: ' + previous() + unit()">
             {{ d }}
           </span>
         }

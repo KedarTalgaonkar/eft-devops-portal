@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
@@ -9,7 +10,7 @@ import { ArtifactInfo, ArtifactRepository } from './artifacts.models';
 /** Support view: repositories and the artifacts in the selected one, with checksums. */
 @Component({
   selector: 'app-artifacts-browse',
-  imports: [DatePipe, DecimalPipe, LoadState, StatusChip],
+  imports: [DatePipe, DecimalPipe, MatTooltipModule, LoadState, StatusChip],
   template: `
     <app-load-state [loading]="repos.isLoading()" [error]="repos.error()" what="repositories" (retry)="repos.reload()" />
     <div class="table-wrap">
@@ -53,7 +54,7 @@ import { ArtifactInfo, ArtifactRepository } from './artifacts.models';
                     <td>{{ a.createdAt | date: 'dd MMM yyyy, HH:mm' }}</td>
                     <td>{{ a.createdBy }}</td>
                     <td class="num">{{ a.downloads }}</td>
-                    <td class="mono faint" [title]="a.sha256">{{ a.sha256.slice(0, 12) }}…</td>
+                    <td class="mono faint" [matTooltip]="'SHA-256 ' + a.sha256">{{ a.sha256.slice(0, 12) }}…</td>
                   </tr>
                 }
               </tbody>

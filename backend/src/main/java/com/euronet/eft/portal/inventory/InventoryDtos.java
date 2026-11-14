@@ -64,6 +64,6 @@ public final class InventoryDtos {
     public record ChangeView(
             Long id, Long applicationId, String application, String client, Long deploymentId, String environment,
             String contextName, String changeType, String field, String oldValue, String newValue, String source,
-            Instant changedAt) {
+            String changedBy, Instant changedAt) {
     }
 }

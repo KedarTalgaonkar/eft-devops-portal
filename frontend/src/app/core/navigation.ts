@@ -1,4 +1,5 @@
 import { ToolName } from '../shared/tool-logo';
+import { PortalRole } from './auth';
 
 export interface NavItem {
   path: string;
@@ -10,6 +11,8 @@ export interface NavItem {
 export interface NavGroup {
   label: string;
   items: NavItem[];
+  /** Only shown to users with this role (the backend enforces the same rule). */
+  requires?: PortalRole;
 }
 
 /** Drives the sidebar. Add a route in app.routes.ts and an entry here for a new module. */
@@ -39,6 +42,11 @@ export const NAV_GROUPS: NavGroup[] = [
       { path: 'monitoring', label: 'Monitoring', icon: 'monitoring', logo: 'grafana' },
       { path: 'inventory', label: 'Application inventory', icon: 'inventory_2', logo: 'tomcat' },
     ],
+  },
+  {
+    label: 'Administration',
+    requires: 'ADMIN',
+    items: [{ path: 'admin', label: 'Users & audit log', icon: 'admin_panel_settings' }],
   },
 ];
 

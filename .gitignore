@@ -3,6 +3,8 @@
 
 # backend
 backend/target/
+backend/certs/*.crt
+backend/certs/*.pem
 
 # frontend
 frontend/node_modules/

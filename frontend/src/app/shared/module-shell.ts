@@ -31,14 +31,14 @@ export interface ModuleTab {
           }
           <div class="titles">
             <span class="eyebrow">{{ eyebrow() }}</span>
-            <h1>{{ title() }}</h1>
+            <h1>{{ heading() }}</h1>
             @if (subtitle()) {
               <p>{{ subtitle() }}</p>
             }
           </div>
           <div class="actions"><ng-content select="[actions]" /></div>
         </div>
-        <nav class="tabs" [attr.aria-label]="title() + ' views'">
+        <nav class="tabs" [attr.aria-label]="heading() + ' views'">
           @for (t of tabs(); track t.path) {
             <a [routerLink]="t.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" class="tab"
                queryParamsHandling="preserve">
@@ -81,7 +81,8 @@ export interface ModuleTab {
   `,
 })
 export class ModuleShell {
-  readonly title = input.required<string>();
+  /** Page heading. Deliberately not called "title": that would also become a native title attribute on the whole page. */
+  readonly heading = input.required<string>();
   readonly eyebrow = input('Euronet India · EFT');
   readonly subtitle = input<string>();
   readonly logos = input<ToolName[]>([]);

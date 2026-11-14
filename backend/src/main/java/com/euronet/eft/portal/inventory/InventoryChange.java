@@ -44,7 +44,14 @@ public class InventoryChange {
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
 
+    @Column(name = "changed_by")
+    private String changedBy;
+
     protected InventoryChange() {
+    }
+
+    public String getChangedBy() {
+        return changedBy;
     }
 
     public InventoryChange(Long applicationId, Long deploymentId, Type type, String field, String oldValue,
@@ -57,6 +64,7 @@ public class InventoryChange {
         this.newValue = truncate(newValue);
         this.source = source.name();
         this.changedAt = Instant.now();
+        this.changedBy = com.euronet.eft.portal.security.CurrentUser.nameOrSystem();
     }
 
     private static String truncate(String v) {

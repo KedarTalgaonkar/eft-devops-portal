@@ -34,10 +34,10 @@ html {
   --eu-saffron: #f59e0b; // India accent, used sparingly
 
   // ---- surfaces & text ----
-  --app-bg: #f3f5f9;
+  --app-bg: #eceff5;
   --app-card: #ffffff;
-  --app-line: #e3e7ef;
-  --app-line-strong: #cfd6e3;
+  --app-line: #dce1ea;
+  --app-line-strong: #c6cedc;
   --app-text: #0f1b33;
   --app-muted: #5b6780;
   --app-faint: #8a94a8;
@@ -62,7 +62,7 @@ html {
 
   --mat-sys-primary: var(--eu-navy-600);
   --radius: 14px;
-  --shadow: 0 1px 2px rgba(15, 27, 51, 0.06), 0 4px 14px rgba(15, 27, 51, 0.05);
+  --shadow: 0 1px 2px rgba(15, 27, 51, 0.08), 0 6px 18px rgba(15, 27, 51, 0.07);
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
@@ -100,10 +100,19 @@ a {
   box-sizing: border-box;
   max-width: 1680px;
   margin: 0 auto;
-  padding: 20px 28px 56px;
+  padding: 24px 28px 64px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+}
+
+// The routed tab component is a single element inside .page; give its own blocks the same rhythm,
+// otherwise sections, KPI rows and cards inside a tab touch each other.
+.page > :not(.filters):not(router-outlet) {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
 }
 
 .section {
@@ -172,19 +181,19 @@ a {
 
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
 }
 
 .grid-2 {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
 }
 
 .grid-3 {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 }
 
@@ -361,6 +370,24 @@ table.data {
   font-size: 18px;
   width: 18px;
   height: 18px;
+}
+
+// ---------- tooltips: one style everywhere (no native title tooltips, they flash black on Windows) ----------
+.mat-mdc-tooltip {
+  --mat-tooltip-container-color: var(--eu-navy-900);
+  --mat-tooltip-supporting-text-color: #ffffff;
+  --mat-tooltip-supporting-text-font: 'IBM Plex Sans', system-ui, sans-serif;
+  --mat-tooltip-supporting-text-size: 12.5px;
+  --mat-tooltip-supporting-text-line-height: 1.4;
+  --mat-tooltip-container-shape: 8px;
+  animation-duration: 0.06s !important;
+}
+
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  padding: 6px 10px;
+  max-width: 340px;
+  box-shadow: 0 6px 18px rgba(10, 22, 51, 0.25);
+  white-space: pre-line;
 }
 
 .link-more {

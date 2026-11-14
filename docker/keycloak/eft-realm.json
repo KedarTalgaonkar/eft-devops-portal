@@ -1,0 +1,99 @@
+{
+  "realm": "eft",
+  "displayName": "EFT DevOps Portal · local SSO (development only)",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)",
+  "roles": {
+    "realm": [
+      { "name": "Portal.Viewer", "description": "Read every dashboard" },
+      { "name": "Portal.Editor", "description": "Import inventory, edit jobs and repositories, run scans" },
+      { "name": "Portal.Admin", "description": "Environments, local accounts, audit log" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "eft-portal",
+      "name": "EFT DevOps Portal",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "eft-portal-dev-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "http://localhost:8081/login/oauth2/code/sso",
+        "http://localhost:4200/login/oauth2/code/sso"
+      ],
+      "webOrigins": ["http://localhost:8081", "http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8081/*##http://localhost:4200/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "portal roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "viewer",
+      "enabled": true,
+      "email": "viewer@example.internal",
+      "emailVerified": true,
+      "firstName": "Vera",
+      "lastName": "Viewer",
+      "credentials": [{ "type": "password", "value": "Viewer-Dev-2026!", "temporary": false }],
+      "realmRoles": ["Portal.Viewer"]
+    },
+    {
+      "username": "editor",
+      "enabled": true,
+      "email": "editor@example.internal",
+      "emailVerified": true,
+      "firstName": "Eddie",
+      "lastName": "Editor",
+      "credentials": [{ "type": "password", "value": "Editor-Dev-2026!", "temporary": false }],
+      "realmRoles": ["Portal.Editor"]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@example.internal",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "Admin-Dev-2026!", "temporary": false }],
+      "realmRoles": ["Portal.Admin"]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { PipelineFilters } from './pipeline-filters';
   selector: 'app-pipelines-shell',
   imports: [ModuleShell, EnvFilter],
   template: `
-    <app-module-shell title="Delivery pipelines" subtitle="Jenkins builds and deployments per project, for every environment"
+    <app-module-shell heading="Delivery pipelines" subtitle="Jenkins builds and deployments per project, for every environment"
                       [logos]="['jenkins', 'tomcat']" [tabs]="tabs">
       <div class="filters">
         <app-env-filter [(value)]="filters.env" />

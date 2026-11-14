@@ -1,0 +1,227 @@
+// Desktop: fixed sidebar column + scrolling content. No JS measuring, so nothing jumps while the page loads.
+.shell {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  height: 100dvh;
+  background: var(--app-bg);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--eu-navy-900);
+  color: #fff;
+}
+
+.brand {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+nav {
+  flex: 1;
+  padding: 10px 12px;
+  overflow-y: auto;
+}
+
+.group {
+  margin-top: 14px;
+}
+
+.group-label {
+  padding: 0 10px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.12s;
+
+  mat-icon {
+    font-size: 19px;
+    width: 19px;
+    height: 19px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+  }
+
+  &.active {
+    background: var(--eu-navy-600);
+    color: #fff;
+    box-shadow: inset 3px 0 0 var(--eu-teal);
+  }
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--eu-teal);
+  color: var(--eu-navy-900);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+
+  .name {
+    font-weight: 600;
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meta {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.user-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 19px;
+    width: 19px;
+    height: 19px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}
+
+.foot {
+  padding: 12px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.mode {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--eu-saffron);
+  font-weight: 600;
+}
+
+.mode.live {
+  background: rgba(0, 163, 161, 0.18);
+  color: var(--eu-teal);
+}
+
+.foot-note {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.content {
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.topbar {
+  display: none;
+}
+
+.backdrop {
+  display: none;
+}
+
+// Small screens: the sidebar becomes an off-canvas drawer
+@media (max-width: 960px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 272px;
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .nav-open .nav {
+    transform: none;
+  }
+
+  .nav-open .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    border: 0;
+    background: rgba(10, 22, 51, 0.45);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--eu-navy-900);
+  }
+
+  .menu {
+    background: none;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    padding: 6px;
+    display: inline-flex;
+  }
+}

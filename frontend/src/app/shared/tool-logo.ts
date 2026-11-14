@@ -38,7 +38,6 @@ export type ToolName = keyof typeof LOGOS;
   template: `
     <span class="logo" [class.tile]="tile()" [style.width.px]="size()" [style.height.px]="size()">
       <svg viewBox="0 0 24 24" role="img" [attr.aria-label]="icon().title" [style.width.px]="inner()" [style.height.px]="inner()">
-        <title>{{ icon().title }}</title>
         <path [attr.d]="icon().path" [attr.fill]="color()" />
       </svg>
     </span>

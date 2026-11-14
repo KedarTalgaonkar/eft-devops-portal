@@ -1,28 +1,27 @@
 package com.euronet.eft.portal.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.euronet.eft.portal.security.audit.ApiAuditInterceptor;
+import com.euronet.eft.portal.security.audit.AuditService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * CORS for running the Angular dev server outside the nginx proxy.
- * No authentication yet: an Entra ID (OAuth2 resource server) SecurityFilterChain is planned for phase 4
- * and belongs in this package.
+ * MVC setup. No CORS: the SPA and the API share one origin (nginx in the containers, the dev-server proxy in
+ * development), so cross-origin requests are refused by default. Security lives in the security package.
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private final String[] allowedOrigins;
+    private final ObjectProvider<AuditService> audit;
 
-    public WebConfig(@Value("${portal.cors.allowed-origins}") String[] allowedOrigins) {
-        this.allowedOrigins = allowedOrigins;
+    public WebConfig(ObjectProvider<AuditService> audit) {
+        this.audit = audit;
     }
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+    public void addInterceptors(InterceptorRegistry registry) {
+        audit.ifAvailable(a -> registry.addInterceptor(new ApiAuditInterceptor(a)).addPathPatterns("/api/**"));
     }
 }

@@ -1,0 +1,31 @@
+# Single sign-on against the local Keycloak container (development only), standing in for Microsoft Entra ID.
+# The browser reaches Keycloak on http://localhost:8180, the backend container on http://keycloak:8080, so endpoints
+# are listed explicitly and the token issuer is pinned with portal.security.oidc.expected-issuer.
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          sso:
+            provider: keycloak
+            client-name: Local Keycloak
+            client-id: eft-portal
+            # own variable: compose always passes OIDC_CLIENT_SECRET (empty unless Entra is configured), which would win
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:eft-portal-dev-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            authorization-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/eft/protocol/openid-connect/auth
+            token-uri: ${KEYCLOAK_INTERNAL_URL:http://keycloak:8080}/realms/eft/protocol/openid-connect/token
+            jwk-set-uri: ${KEYCLOAK_INTERNAL_URL:http://keycloak:8080}/realms/eft/protocol/openid-connect/certs
+            user-info-uri: ${KEYCLOAK_INTERNAL_URL:http://keycloak:8080}/realms/eft/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
+
+portal:
+  security:
+    sso-label: Sign in with SSO (local Keycloak)
+    oidc:
+      expected-issuer: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/eft
+      end-session-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/eft/protocol/openid-connect/logout

@@ -22,6 +22,13 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -s /opt/settings.xml package \
 # ---------- runtime: JRE 25 ----------
 FROM eclipse-temurin:25-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
+# Optional corporate root CA(s) (TLS-inspecting proxy): needed to reach Entra ID, Jenkins, GitHub, ... over HTTPS.
+# Put *.crt / *.pem files in backend/certs/ (see certs/README.md); nothing happens when the folder is empty.
+COPY certs/ /tmp/certs/
+RUN for f in /tmp/certs/*.crt /tmp/certs/*.pem; do \
+      [ -f "$f" ] || continue; \
+      keytool -importcert -noprompt -cacerts -storepass changeit -alias "corp-$(basename "$f")" -file "$f"; \
+    done; rm -rf /tmp/certs
 WORKDIR /app
 COPY --from=build /extracted/dependencies/ ./
 COPY --from=build /extracted/spring-boot-loader/ ./

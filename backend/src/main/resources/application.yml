@@ -23,13 +23,30 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  # Server-side sessions in PostgreSQL (tables from Flyway V4): survive restarts, shared by several backend instances
+  session:
+    timeout: ${PORTAL_SESSION_IDLE_TIMEOUT:30m}
+    jdbc:
+      initialize-schema: never
+      cleanup-cron: "0 */5 * * * *"
 
 server:
   port: 8080
   shutdown: graceful
+  # Trust X-Forwarded-* from the nginx / ingress in front (builds correct https redirect URIs, client IPs for audit)
+  forward-headers-strategy: native
   error:
     include-message: never
     include-stacktrace: never
+  servlet:
+    session:
+      cookie:
+        name: EFTSESSION
+        http-only: true
+        # true behind HTTPS (production); false only for http://localhost
+        secure: ${PORTAL_COOKIE_SECURE:false}
+        # Lax: sent on the top-level redirect back from the identity provider, never on cross-site sub-requests
+        same-site: lax
 
 management:
   endpoints:
@@ -45,11 +62,31 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
   api-docs:
+    # administrators only; set PORTAL_API_DOCS=false to switch off completely in production
+    enabled: ${PORTAL_API_DOCS:true}
     path: /v3/api-docs
 
 portal:
-  cors:
-    allowed-origins: http://localhost:4200,http://localhost:8081
+  security:
+    local-login-enabled: ${PORTAL_LOCAL_LOGIN:true}
+    sso-label: ${PORTAL_SSO_LABEL:Sign in with Microsoft}
+    registration-id: sso
+    # SSO users whose token carries no mapped role get this role; empty = refuse them
+    default-role: ${PORTAL_DEFAULT_ROLE:VIEWER}
+    # Entra ID app roles (or group object ids) -> portal roles
+    role-mapping:
+      "[Portal.Viewer]": VIEWER
+      "[Portal.Editor]": EDITOR
+      "[Portal.Admin]": ADMIN
+    absolute-session-timeout: ${PORTAL_SESSION_MAX_AGE:10h}
+    cookie-secure: ${PORTAL_COOKIE_SECURE:false}
+    audit-retention: 365d
+    lockout:
+      max-attempts: 5
+      duration: 15m
+    bootstrap-admin:
+      username: ${PORTAL_BOOTSTRAP_ADMIN_USERNAME:admin}
+      password: ${PORTAL_BOOTSTRAP_ADMIN_PASSWORD:}
   integrations:
     jenkins:
       mode: ${JENKINS_MODE:mock}

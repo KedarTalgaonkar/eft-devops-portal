@@ -5,7 +5,7 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-dashboard-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell title="EFT command centre"
+    <app-module-shell heading="EFT command centre"
                       subtitle="Delivery, quality, security and service health of every EFT application in one place"
                       [logos]="['jenkins', 'github', 'sonarqube', 'jfrog', 'grafana']" [tabs]="tabs" />
   `,

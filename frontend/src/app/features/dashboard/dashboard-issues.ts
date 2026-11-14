@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { Environments } from '../../core/environments';
 import { Severity, ago } from '../../core/models';
@@ -12,7 +13,7 @@ import { AttentionReport } from './dashboard.models';
 /** Support view: every open issue across modules, filterable, each linking to where to start. */
 @Component({
   selector: 'app-dashboard-issues',
-  imports: [DatePipe, LoadState, StatusChip],
+  imports: [DatePipe, MatTooltipModule, LoadState, StatusChip],
   template: `
     <div class="filters">
       <input class="search" type="search" placeholder="Search issue, owner or environment" aria-label="Search issues"
@@ -48,7 +49,7 @@ import { AttentionReport } from './dashboard.models';
                 <td class="wrap muted">{{ i.detail }}</td>
                 <td>{{ i.environment ? envs.name(i.environment) : '—' }}</td>
                 <td>{{ i.owner ?? '—' }}</td>
-                <td [title]="(i.since | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(i.since) }}</td>
+                <td [matTooltip]="(i.since | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(i.since) }}</td>
                 <td><button class="btn" type="button" (click)="open(i.link)">Open</button></td>
               </tr>
             }

@@ -1,0 +1,64 @@
+<div class="shell" [class.nav-open]="navOpen()">
+  <aside class="nav" aria-label="Main menu">
+    <div class="brand"><app-brand-mark /></div>
+
+    <nav>
+      @for (g of groups(); track g.label) {
+        <div class="group">
+          <div class="group-label">{{ g.label }}</div>
+          @for (item of g.items; track item.path) {
+            <a class="item" [routerLink]="item.path" routerLinkActive="active">
+              @if (item.logo) {
+                <app-tool-logo [name]="item.logo" [size]="18" mono="currentColor" />
+              } @else {
+                <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+              }
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    @if (auth.user(); as u) {
+      <div class="user">
+        <div class="avatar" aria-hidden="true">{{ initials() }}</div>
+        <div class="who">
+          <div class="name">{{ u.displayName }}</div>
+          <div class="meta">{{ topRole() }} · {{ u.source === 'SSO' ? 'Single sign-on' : 'Local account' }}</div>
+        </div>
+        <div class="user-actions">
+          @if (u.source === 'LOCAL') {
+            <a class="icon-btn" routerLink="/account/password" matTooltip="Change password" aria-label="Change password">
+              <mat-icon>key</mat-icon>
+            </a>
+          }
+          <button type="button" class="icon-btn" (click)="signOut()" matTooltip="Sign out" aria-label="Sign out">
+            <mat-icon>logout</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="foot">
+      @if (dataMode(); as mode) {
+        <span class="mode" [class.live]="mode === 'Live data'">{{ mode }}</span>
+      }
+      <span class="foot-note">EFT · Euronet India</span>
+    </div>
+  </aside>
+
+  <button type="button" class="backdrop" aria-label="Close menu" tabindex="-1" (click)="navOpen.set(false)"></button>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu" type="button" aria-label="Open menu" (click)="navOpen.set(true)">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <app-brand-mark [compact]="true" />
+    </div>
+    <main id="main">
+      <router-outlet />
+    </main>
+  </div>
+</div>

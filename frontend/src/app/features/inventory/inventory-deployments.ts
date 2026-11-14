@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
+import { Auth } from '../../core/auth';
 import { Environments } from '../../core/environments';
 import { EnvFilter } from '../../shared/env-filter';
 import { LoadState } from '../../shared/load-state';
@@ -29,6 +30,8 @@ export class InventoryDeploymentsPage {
   private readonly http = inject(HttpClient);
   private readonly snackBar = inject(MatSnackBar);
   protected readonly envs = inject(Environments);
+  /** Editors and administrators may import and edit; the backend enforces the same rule. */
+  protected readonly canEdit = inject(Auth).can('EDITOR');
 
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');
