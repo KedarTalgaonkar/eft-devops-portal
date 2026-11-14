@@ -158,6 +158,10 @@ public class SecurityConfig {
                         // administrators
                         .requestMatchers("/api/admin/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/environments/**").hasRole("ADMIN")
+                        // AI: any signed-in user may ask for a build explanation and rate answers (daily limit applies);
+                        // regenerating is checked in the service (EDITOR); writing a digest on demand is for administrators
+                        .requestMatchers(HttpMethod.POST, "/api/ai/digest").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/ai/builds/*/*/*/explain", "/api/ai/insights/*/feedback").hasRole("VIEWER")
                         // editors change data, viewers read
                         .requestMatchers(HttpMethod.POST, "/api/**").hasRole("EDITOR")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("EDITOR")

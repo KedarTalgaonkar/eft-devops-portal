@@ -14,4 +14,11 @@ public interface JenkinsClient extends IntegrationHealth {
      * @return an empty list when the job does not exist
      */
     List<JenkinsBuild> builds(String job, int limit);
+
+    /**
+     * Console log of one build: the last {@code maxBytes} plus earlier error lines.
+     *
+     * @throws com.euronet.eft.portal.common.NotFoundException when the job or build does not exist
+     */
+    BuildLog log(String job, int number, int maxBytes);
 }

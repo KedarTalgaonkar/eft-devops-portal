@@ -64,6 +64,12 @@ public class MockJenkinsClient implements JenkinsClient {
     }
 
     @Override
+    public BuildLog log(String job, int number, int maxBytes) {
+        String text = MockBuildLogs.generate(job, number);
+        return BuildLog.read(new java.io.ByteArrayInputStream(text.getBytes(java.nio.charset.StandardCharsets.UTF_8)), maxBytes);
+    }
+
+    @Override
     public IntegrationStatus status() {
         return IntegrationStatus.mock("jenkins", "Jenkins");
     }

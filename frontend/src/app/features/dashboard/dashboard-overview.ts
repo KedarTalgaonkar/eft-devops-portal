@@ -11,6 +11,7 @@ import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { ToolLogo, ToolName } from '../../shared/tool-logo';
 import { AreaStatus, AttentionReport, DashboardOverview } from './dashboard.models';
+import { DigestCard } from './digest-card';
 
 const AREA_LOGO: Record<AreaStatus['key'], ToolName | null> = {
   delivery: 'jenkins',
@@ -25,7 +26,7 @@ const ENV_COLORS = ['#233f8e', '#00a3a1', '#4f6bb8', '#f59e0b', '#8b5cf6', '#c83
 /** Executive one-pager: overall RAG, one scorecard per area, headline KPIs and the top issues. */
 @Component({
   selector: 'app-dashboard-overview',
-  imports: [DatePipe, RouterLink, MatIconModule, KpiCard, LoadState, StatusChip, ToolLogo, Donut],
+  imports: [DatePipe, RouterLink, MatIconModule, KpiCard, LoadState, StatusChip, ToolLogo, Donut, DigestCard],
   templateUrl: './dashboard-overview.html',
   styleUrl: './dashboard-overview.scss',
 })

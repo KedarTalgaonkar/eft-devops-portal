@@ -45,6 +45,26 @@ x-security: &security
   PORTAL_SESSION_MAX_AGE: ${PORTAL_SESSION_MAX_AGE:-10h}
   PORTAL_API_DOCS: ${PORTAL_API_DOCS:-true}
 
+# AI features (docs/ai.md). This dev stack defaults to mock: sample answers, nothing leaves the machine.
+x-ai: &ai
+  AI_MODE: ${AI_MODE:-mock}
+  AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+  AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-100}
+  AI_USER_DAILY_LIMIT: ${AI_USER_DAILY_LIMIT:-50}
+  AI_MAX_LOG_KB: ${AI_MAX_LOG_KB:-64}
+  AI_MASK_DOMAINS: ${AI_MASK_DOMAINS:-.internal,.local,.corp,.lan}
+  AI_DIGEST_ENABLED: ${AI_DIGEST_ENABLED:-true}
+  AI_DIGEST_CRON: ${AI_DIGEST_CRON:-0 0 7 * * MON-FRI}
+  AI_DIGEST_ZONE: ${AI_DIGEST_ZONE:-Asia/Kolkata}
+  # Amazon Bedrock (AI_PROVIDER=bedrock): region plus a Bedrock API key, or AWS credentials / an IAM role
+  AWS_REGION: ${AWS_REGION:-}
+  AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+  # Microsoft Foundry (AI_PROVIDER=foundry)
+  ANTHROPIC_FOUNDRY_API_KEY: ${ANTHROPIC_FOUNDRY_API_KEY:-}
+  ANTHROPIC_FOUNDRY_RESOURCE: ${ANTHROPIC_FOUNDRY_RESOURCE:-}
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -90,7 +110,7 @@ services:
       args:
         MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-}
     environment:
-      <<: [*integrations, *security]
+      <<: [*integrations, *security, *ai]
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev,sso-dev}
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-eftportal}
       DB_USER: ${POSTGRES_USER:-eft}

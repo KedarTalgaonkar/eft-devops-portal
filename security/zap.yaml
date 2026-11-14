@@ -33,6 +33,9 @@ jobs:
   - action: WARN
     customMessage: ''
     id: 2
+  - action: WARN
+    customMessage: ''
+    id: 10010
   type: outputSummary
 - parameters:
     reportDescription: ''

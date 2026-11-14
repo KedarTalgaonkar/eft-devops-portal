@@ -19,6 +19,7 @@
         <java.version>25</java.version>
         <springdoc.version>3.2.0</springdoc.version>
         <poi.version>5.4.1</poi.version>
+        <anthropic.version>3.8.0</anthropic.version>
         <!-- Tests tagged "db" need PostgreSQL; the image build skips them, compose.test.yml runs them -->
         <test.excludedGroups>db</test.excludedGroups>
     </properties>
@@ -78,6 +79,22 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+        <!-- AI features: official Anthropic SDK; Bedrock and Foundry backends for when the provider is chosen -->
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>${anthropic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java-bedrock</artifactId>
+            <version>${anthropic.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java-foundry</artifactId>
+            <version>${anthropic.version}</version>
         </dependency>
 
         <dependency>

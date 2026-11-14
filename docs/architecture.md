@@ -30,10 +30,13 @@ Code is organised by feature under `com.euronet.eft.portal`:
 | `health` | Scheduled HTTP probes of every deployment URL |
 | `dashboard` | Overview KPIs, environment status grid, integration strip |
 | `github`, `quality`, `artifacts`, `monitoring`, `sbom` | REST controllers over the matching integration (SBOM also persists scans) |
+| `ai` | AI gateway (limits, masking, Claude via Anthropic / Bedrock / Foundry or mock, usage ledger), `/api/ai`, `/api/admin/ai` |
+| `ai.builds`, `ai.digest` | Build failure explainer and executive digest (prompts, result schemas, mock answers); see [ai.md](ai.md) |
 
 ### Data
 * **Persisted** (Flyway, `db/migration`): `application`, `deployment`, `environment`, `application_repository`,
-  `inventory_change`, `sbom_scan`, `sbom_vulnerability`, `portal_user`, `audit_event`, `spring_session*` (HTTP sessions).
+  `inventory_change`, `sbom_scan`, `sbom_vulnerability`, `portal_user`, `audit_event`, `spring_session*` (HTTP sessions),
+  `ai_usage`, `ai_insight`, `ai_feedback` (AI ledger, stored answers, ratings).
 * **Fetched live and cached** (Caffeine, 60 s): Jenkins builds and other tool data.
 * `db/dev/R__dev_sample_data.sql` is applied only with the `dev` profile and uses fake `*.example.internal` hosts.
   The real inventory (with internal IPs) is loaded through `POST /api/inventory/import` and never committed.
@@ -52,7 +55,9 @@ so the stack runs with no tokens. Switching one tool to `live` needs its URL and
 * Standalone components, signals, lazy-loaded feature routes (`src/app/features/*`).
 * `core/` holds the signed-in shell (`PortalLayout`), the `Auth` session service and route guards (`authGuard`,
   `roleGuard`), the API base URL and the HTTP error interceptor (401 → sign-in page, 403 password change → change page).
-* `features/auth` is the sign-in and change-password pages; `features/admin` is users and the audit log (ADMIN only).
+* `features/auth` is the sign-in and change-password pages; `features/admin` is users, the audit log and AI usage (ADMIN only).
+* AI: `core/ai.ts` (status and types), `shared/ai-meta.ts` (provenance and ratings under every answer),
+  `features/pipelines/build-explanation.ts` (in the builds dialog), `features/dashboard/digest-card.ts`.
 * Sign-in follows the backend-for-frontend pattern: no tokens in the browser, only an HttpOnly session cookie plus the
   `XSRF-TOKEN` cookie, which Angular echoes as `X-XSRF-TOKEN` (see [security.md](security.md)).
 * `shared/` holds reusable UI: status badges, environment chips, KPI cards, page header, state panels.

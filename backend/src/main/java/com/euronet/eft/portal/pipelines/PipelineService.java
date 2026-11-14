@@ -79,12 +79,36 @@ public class PipelineService {
 
     /** Latest builds (any age) of one project in one environment. */
     public List<BuildView> builds(long applicationId, String environment, int limit) {
+        Pipeline p = pipeline(applicationId, environment);
+        return builds.builds(p.job()).stream().limit(Math.max(1, limit)).map(BuildView::of).toList();
+    }
+
+    /** Identifies one pipeline (application + environment) and its Jenkins job; used by the AI build explainer. */
+    public record PipelineRef(long applicationId, String project, String client, String owner, String environment, String job) {
+    }
+
+    public PipelineRef ref(long applicationId, String environment) {
+        Pipeline p = pipeline(applicationId, environment);
+        Application a = p.app();
+        return new PipelineRef(a.getId(), a.getName(), a.getClient(), a.getOwner(), p.environment(), p.job());
+    }
+
+    /** One build of a pipeline, from the cached build list. */
+    public BuildView build(long applicationId, String environment, int number) {
+        Pipeline p = pipeline(applicationId, environment);
+        return builds.builds(p.job()).stream()
+                .filter(b -> b.number() == number)
+                .findFirst()
+                .map(BuildView::of)
+                .orElseThrow(() -> new NotFoundException("Build", p.job() + " #" + number));
+    }
+
+    private Pipeline pipeline(long applicationId, String environment) {
         String env = EnvironmentCodes.require(environment);
-        Pipeline p = pipelines(env).stream()
+        return pipelines(env).stream()
                 .filter(x -> x.app().getId() == applicationId)
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Pipeline", applicationId + "/" + env));
-        return builds.builds(p.job()).stream().limit(Math.max(1, limit)).map(BuildView::of).toList();
     }
 
     /** Successful deployments across projects, newest first. */

@@ -113,6 +113,7 @@ export const routes: Routes = [
           { path: '', pathMatch: 'full', redirectTo: 'users' },
           { path: 'users', title: 'Users' + T, loadComponent: () => import('./features/admin/admin-users').then((m) => m.AdminUsersPage) },
           { path: 'audit', title: 'Audit log' + T, loadComponent: () => import('./features/admin/admin-audit').then((m) => m.AdminAuditPage) },
+          { path: 'ai', title: 'AI usage' + T, loadComponent: () => import('./features/admin/admin-ai').then((m) => m.AdminAiPage) },
         ],
       },
     ],

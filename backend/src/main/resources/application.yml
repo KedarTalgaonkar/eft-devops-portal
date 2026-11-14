@@ -121,3 +121,22 @@ portal:
     mode: ${HEALTH_PROBE_MODE:mock}
     interval: PT2M
     timeout: PT3S
+  # AI features (build failure explainer, executive digest). off | mock | live; see docs/ai.md
+  ai:
+    mode: ${AI_MODE:off}
+    provider: ${AI_PROVIDER:anthropic}
+    model: ${AI_MODEL:claude-opus-5-5}
+    api-key: ${ANTHROPIC_API_KEY:}
+    monthly-budget-usd: ${AI_MONTHLY_BUDGET_USD:100}
+    user-daily-limit: ${AI_USER_DAILY_LIMIT:50}
+    max-log-kb: ${AI_MAX_LOG_KB:64}
+    mask-domains: ${AI_MASK_DOMAINS:.internal,.local,.corp,.lan}
+    # USD per million tokens, used only for the cost estimate (Claude Opus 5.5 list prices)
+    pricing:
+      input-per-mtok: ${AI_PRICE_INPUT:4.0}
+      output-per-mtok: ${AI_PRICE_OUTPUT:20.0}
+      cache-read-per-mtok: ${AI_PRICE_CACHE_READ:0.20}
+    digest:
+      enabled: ${AI_DIGEST_ENABLED:true}
+      cron: "${AI_DIGEST_CRON:0 0 7 * * MON-FRI}"
+      zone: ${AI_DIGEST_ZONE:Asia/Kolkata}

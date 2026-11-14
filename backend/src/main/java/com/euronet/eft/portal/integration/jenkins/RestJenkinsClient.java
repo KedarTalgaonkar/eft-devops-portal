@@ -1,6 +1,7 @@
 package com.euronet.eft.portal.integration.jenkins;
 
 import com.euronet.eft.portal.common.IntegrationUnavailableException;
+import com.euronet.eft.portal.common.NotFoundException;
 import com.euronet.eft.portal.integration.IntegrationMode;
 import com.euronet.eft.portal.integration.IntegrationStatus;
 import com.euronet.eft.portal.integration.IntegrationsProperties;
@@ -57,14 +58,39 @@ public class RestJenkinsClient implements JenkinsClient {
         this.http = builder.build();
     }
 
+    /** {@code GET /job/<folder>/job/<name>/<number>/consoleText}, streamed; only the tail and error lines are kept. */
     @Override
-    public List<JenkinsBuild> builds(String job, int limit) {
+    public BuildLog log(String job, int number, int maxBytes) {
+        URI target = jobUri(job).pathSegment(String.valueOf(number), "consoleText").encode().build().toUri();
+        try {
+            return http.get().uri(target).exchange((request, response) -> {
+                if (response.getStatusCode().value() == 404) {
+                    throw new NotFoundException("Jenkins build", job + " #" + number);
+                }
+                if (response.getStatusCode().isError()) {
+                    throw new IntegrationUnavailableException("Jenkins",
+                            "log of " + job + " #" + number + " returned " + response.getStatusCode(), null);
+                }
+                return BuildLog.read(response.getBody(), maxBytes);
+            });
+        } catch (RestClientException e) {
+            throw new IntegrationUnavailableException("Jenkins", "log of " + job + " #" + number + ": " + e.getMessage(), e);
+        }
+    }
+
+    private UriComponentsBuilder jobUri(String job) {
         UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(baseUrl);
         for (String segment : job.split("/")) {
             if (!segment.isBlank()) {
                 uri.pathSegment("job", segment);
             }
         }
+        return uri;
+    }
+
+    @Override
+    public List<JenkinsBuild> builds(String job, int limit) {
+        UriComponentsBuilder uri = jobUri(job);
         URI target = uri.pathSegment("api", "json")
                 .queryParam("tree", "{tree}")
                 .encode()

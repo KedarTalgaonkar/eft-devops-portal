@@ -114,6 +114,18 @@ ZAP exit codes: 0 = all pass, 1 = failures, 2 = warnings only. Rule decisions ar
 | 2 Private IP Disclosure | WARN, accepted | The inventory lists internal Tomcat hosts by design; it is now only served to signed-in users. Not raised in the latest scan because the API needs sign-in. |
 | 10109 Modern Web Application | IGNORE | Informational: tells you to use the AJAX spider, which the scan already does. |
 
+Re-run after adding the AI features (14 Nov 2026): unchanged, 0 FAIL, 60 PASS, the same accepted warning.
+
+## AI features
+Details in [ai.md](ai.md). Security-relevant points:
+* Only the backend calls the model; keys stay in environment variables; `AI_MODE=off` by default outside the Docker dev stack.
+* Secrets are removed and IPs, e-mails and internal hosts replaced by placeholders **before** anything is sent; what was
+  masked is shown with each answer and written to the audit log.
+* Build logs: only the last 64 KB plus error lines. Digest: only aggregated figures already on the dashboard.
+* Per-user daily limit, monthly budget, results reused per build; every request is in `ai_usage` and the audit log.
+* Model output is schema-constrained JSON rendered as plain text (no HTML), labelled *AI-generated*; regenerating needs
+  Editor, writing a digest on demand needs Admin, usage is Admin-only. All AI POSTs need the CSRF token.
+
 ## Other controls
 * **Headers (nginx, every response):** `Content-Security-Policy` with no `unsafe-inline`: scripts and styles from self plus a
   per-request nonce (nginx writes it into `index.html`, Angular applies it via `ngCspNonce`); `frame-ancestors 'none'`,

@@ -71,6 +71,15 @@ deletes anything. Keep the real workbook out of git (it holds internal IPs; `*.x
 Set `<TOOL>_MODE=live` plus its URL and token in `.env`, then `docker compose up -d --build backend`.
 Jenkins has a working live client today; see [docs/integrations.md](docs/integrations.md).
 
+### AI features
+* **Build failure explainer:** *Pipelines → All pipelines*, open a project, **Explain** on a failed build: likely cause,
+  evidence lines from the log, fix steps, who should act. Stored and reused, so each build is analysed once.
+* **Executive digest:** at the top of the *Command centre*, written every weekday morning (and on demand by admins).
+* **Administration → AI usage:** mode, masking, spend against the monthly budget, every request.
+
+The Docker stack runs them in **mock** mode (sample answers, nothing leaves the machine). To use Claude set
+`AI_MODE=live`, `AI_PROVIDER` and its credentials. Data sent, masking, limits and costs: [docs/ai.md](docs/ai.md).
+
 ## Develop
 
 ```bash

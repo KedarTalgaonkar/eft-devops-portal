@@ -26,6 +26,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), req);
     }
 
+    /** AI requests that cannot be served (off, limit reached, provider error): the message is written for users. */
+    @ExceptionHandler(com.euronet.eft.portal.ai.AiException.class)
+    ResponseEntity<ApiError> ai(com.euronet.eft.portal.ai.AiException ex, HttpServletRequest req) {
+        return build(ex.status(), ex.getMessage(), req);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ApiError> badRequest(IllegalArgumentException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
