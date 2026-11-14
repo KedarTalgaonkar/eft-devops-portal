@@ -7,6 +7,7 @@ import { Environments } from '../../core/environments';
 import { HealthState } from '../../core/models';
 import { EnvFilter } from '../../shared/env-filter';
 import { KpiCard } from '../../shared/kpi-card';
+import { CardGroup } from '../../shared/card-group';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { ServiceHealth } from './dashboard.models';
@@ -14,7 +15,7 @@ import { ServiceHealth } from './dashboard.models';
 /** Support view: the latest probe of every deployed context, with HTTP status and response time. */
 @Component({
   selector: 'app-dashboard-services',
-  imports: [DatePipe, EnvFilter, KpiCard, LoadState, StatusChip],
+  imports: [DatePipe, EnvFilter, KpiCard, LoadState, StatusChip, CardGroup],
   template: `
     <div class="filters">
       <app-env-filter [(value)]="env" />
@@ -28,12 +29,22 @@ import { ServiceHealth } from './dashboard.models';
       }
     </div>
 
-    <div class="grid">
-      <app-kpi-card label="Up" icon="check_circle" tone="ok" [value]="count('UP')" />
-      <app-kpi-card label="Down" icon="error" [tone]="count('DOWN') ? 'bad' : 'ok'" [value]="count('DOWN')" />
-      <app-kpi-card label="Not probed" icon="help" [value]="count('UNKNOWN')" hint="No URL in the inventory" />
-      <app-kpi-card label="Slowest response" icon="speed" unit="ms" [value]="slowest()" />
-    </div>
+    <app-card-group heading="Latest probe results" icon="monitor_heart"
+                    description="Every deployed context is called every 2 minutes. Click a card to show only those services in the table.">
+      <div class="grid">
+        <app-kpi-card label="Up" icon="check_circle" tone="ok" [value]="count('UP')" [hint]="pct('UP') + '% of probed services answer'"
+                      link="." [query]="{ state: 'UP' }" linkHint="Show services that are up" />
+        <app-kpi-card label="Down" icon="error" [tone]="count('DOWN') ? 'bad' : 'ok'" [value]="count('DOWN')"
+                      [hint]="count('DOWN') ? 'Not answering or returning errors' : 'Everything answers'"
+                      link="." [query]="{ state: 'DOWN' }" linkHint="Show services that are down" />
+        <app-kpi-card label="Not probed" icon="help" [value]="count('UNKNOWN')" hint="No URL in the inventory: add one to monitor it"
+                      link="." [query]="{ state: 'UNKNOWN' }" linkHint="Show services without a URL" />
+        <app-kpi-card label="Slowest response" icon="speed" unit="ms" [value]="slowest()"
+                      [hint]="slowestService() ? slowestService()!.project + ' · ' + envs.name(slowestService()!.environment) : 'No response times yet'"
+                      link="." [query]="slowestService() ? { q: slowestService()!.contextName || slowestService()!.project } : null"
+                      linkHint="Show the slowest service" />
+      </div>
+    </app-card-group>
 
     <app-load-state [loading]="services.isLoading()" [error]="services.error()" [empty]="services.hasValue() && rows().length === 0"
                     what="service health" emptyText="No services match these filters." (retry)="services.reload()" />
@@ -72,8 +83,10 @@ export class DashboardServicesPage {
 
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');
-  protected readonly env = signal('');
-  protected readonly state = signal<HealthState | ''>('');
+  readonly envParam = input<string | undefined>(undefined, { alias: 'env' });
+  protected readonly env = linkedSignal(() => this.envParam() ?? '');
+  readonly stateParam = input<string | undefined>(undefined, { alias: 'state' });
+  protected readonly state = linkedSignal<HealthState | ''>(() => (['UP', 'DOWN', 'UNKNOWN'].includes(this.stateParam() ?? '') ? (this.stateParam() as HealthState) : ''));
   protected readonly probing = signal(false);
   protected readonly services = httpResource<ServiceHealth[]>(() => apiUrl('dashboard/services'), { defaultValue: [] });
 
@@ -87,6 +100,13 @@ export class DashboardServicesPage {
       .filter((s) => !q || [s.project, s.client, s.contextName, s.url ?? '', s.owner ?? ''].some((v) => v.toLowerCase().includes(q)))
       .sort((a, b) => order[a.state] - order[b.state]);
   });
+  protected readonly slowestService = computed(() =>
+    [...this.services.value()].filter((s) => s.responseTimeMs != null).sort((a, b) => (b.responseTimeMs ?? 0) - (a.responseTimeMs ?? 0))[0] ?? null,
+  );
+  protected pct(state: HealthState): number {
+    const probed = this.services.value().filter((s) => s.state !== 'UNKNOWN').length;
+    return probed ? Math.round((this.count(state) / probed) * 100) : 0;
+  }
   protected readonly slowest = computed(() => Math.max(0, ...this.services.value().map((s) => s.responseTimeMs ?? 0)) || null);
 
   protected count(state: HealthState): number {

@@ -6,6 +6,7 @@ import { Environments } from '../../core/environments';
 import { ago } from '../../core/models';
 import { BarList, StackedBars, StackPoint, StackSeries } from '../../shared/charts';
 import { KpiCard } from '../../shared/kpi-card';
+import { CardGroup } from '../../shared/card-group';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { PipelineFilters } from './pipeline-filters';
@@ -13,7 +14,7 @@ import { DailyBuilds, PipelineInsights } from './pipelines.models';
 
 @Component({
   selector: 'app-pipelines-overview',
-  imports: [RouterLink, KpiCard, LoadState, StackedBars, BarList, StatusChip],
+  imports: [CardGroup, RouterLink, KpiCard, LoadState, StackedBars, BarList, StatusChip],
   templateUrl: './pipelines-overview.html',
   styles: `
     .env-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
@@ -66,7 +67,9 @@ export class PipelinesOverviewPage {
     (this.insights.value()?.problems ?? []).slice(0, 6).map((p) => ({
       label: `${p.project} · ${p.client} · ${this.envs.name(p.environment)}`,
       value: p.failed,
-      hint: `${p.successRate ?? '—'}% success · owner ${p.owner ?? '—'}`,
+      hint: `${p.successRate ?? '—'}% success · owner ${p.owner ?? '—'} · click to investigate`,
+      link: '../all',
+      query: { q: p.project },
       color: p.red ? 'var(--c-failed)' : 'var(--c-aborted)',
     })),
   );

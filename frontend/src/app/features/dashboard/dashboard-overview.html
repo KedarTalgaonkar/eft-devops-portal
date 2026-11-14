@@ -11,77 +11,123 @@
     </div>
     <div class="status-meta">
       <span>Updated {{ r.generatedAt | date: 'dd MMM, HH:mm' }}</span>
-      <button class="btn" type="button" (click)="reload()"><mat-icon>refresh</mat-icon> Refresh</button>
+      <div class="status-actions">
+        @if (ai.enabled()) {
+          <a class="btn" routerLink="../digest"><mat-icon>auto_awesome</mat-icon> Executive digest</a>
+        }
+        <button class="btn" type="button" (click)="reload()"><mat-icon>refresh</mat-icon> Refresh</button>
+      </div>
     </div>
   </section>
 
-  <section class="areas" aria-label="Status by area">
-    @for (a of r.areas; track a.key) {
-      <button type="button" class="card area" (click)="open(a.link)" [attr.aria-label]="a.label + ': ' + a.headline">
-        <div class="area-top">
-          @if (logo[a.key]; as l) {
-            <app-tool-logo [name]="l" [size]="22" />
-          } @else {
-            <mat-icon class="area-icon" aria-hidden="true">shield</mat-icon>
-          }
-          <span class="area-label">{{ a.label }}</span>
-          <app-status-chip [status]="a.status" [text]="a.status === 'GREEN' ? 'On track' : a.status === 'AMBER' ? 'Watch' : 'Act now'" />
-        </div>
-        <div class="area-metric">{{ a.metric }}</div>
-        <div class="area-headline">{{ a.headline }}</div>
-        <span class="area-link">Details →</span>
-      </button>
-    }
-  </section>
+  <app-card-group heading="Status by area" icon="traffic"
+                  description="Red, amber or green for each area right now, with its key number. Open an area for its detail pages.">
+    <div class="areas">
+      @for (a of r.areas; track a.key) {
+        <button type="button" class="card area" (click)="open(a.link)" [attr.aria-label]="a.label + ': ' + a.headline">
+          <div class="area-top">
+            @if (logo[a.key]; as l) {
+              <app-tool-logo [name]="l" [size]="22" />
+            } @else {
+              <mat-icon class="area-icon" aria-hidden="true">shield</mat-icon>
+            }
+            <span class="area-label">{{ a.label }}</span>
+            <app-status-chip [status]="a.status" [text]="a.status === 'GREEN' ? 'On track' : a.status === 'AMBER' ? 'Watch' : 'Act now'" />
+          </div>
+          <div class="area-metric">{{ a.metric }}</div>
+          <div class="area-headline">{{ a.headline }}</div>
+          <span class="area-link">Details →</span>
+        </button>
+      }
+    </div>
+  </app-card-group>
 }
-
-<app-digest-card />
 
 @if (overview.hasValue()) {
   @let o = overview.value();
-  <section class="grid" aria-label="Key figures">
-    <app-kpi-card label="Applications" icon="apps" [value]="o.applications" [hint]="o.clients + ' clients · ' + o.owners + ' owners'" tone="info" />
-    <app-kpi-card label="Deployment paths" icon="dns" [value]="o.deployments" [hint]="o.environments.length + ' environments'" />
-    <app-kpi-card label="Build success · 30 days" icon="rocket_launch" unit="%" [value]="o.pipelines.successRate"
-                  [tone]="(o.pipelines.successRate ?? 0) >= 85 ? 'ok' : (o.pipelines.successRate ?? 0) >= 70 ? 'warn' : 'bad'"
-                  [hint]="o.pipelines.totalBuilds + ' builds · ' + o.pipelines.failed + ' failed'" />
-    <app-kpi-card label="Services up" icon="monitor_heart" [value]="o.services.up + ' / ' + (o.services.up + o.services.down + o.services.unknown)"
-                  [tone]="o.services.down ? 'warn' : 'ok'" [hint]="o.services.down + ' down right now'" />
-  </section>
+  <app-card-group heading="Key metrics" icon="summarize"
+                  description="Applications, deployment paths, build success and service availability across all EFT applications (builds: last 30 days).">
+    <div class="grid">
+      <app-kpi-card label="Applications" icon="apps" [value]="o.applications" [hint]="o.clients + ' clients · ' + o.owners + ' owners'" tone="info"
+                    link="/inventory/overview" linkHint="Open the application inventory" />
+      <app-kpi-card label="Deployment paths" icon="dns" [value]="o.deployments" [hint]="o.environments.length + ' environments'"
+                    link="/inventory/deployments" linkHint="Open all deployment paths" />
+      <app-kpi-card label="Build success · 30 days" icon="rocket_launch" unit="%" [value]="o.pipelines.successRate"
+                    [tone]="(o.pipelines.successRate ?? 0) >= 85 ? 'ok' : (o.pipelines.successRate ?? 0) >= 70 ? 'warn' : 'bad'"
+                    [hint]="o.pipelines.totalBuilds + ' builds · ' + o.pipelines.failed + ' failed'"
+                    link="/pipelines/overview" linkHint="Open delivery pipelines" />
+      <app-kpi-card label="Services up" icon="monitor_heart" [value]="o.services.up + ' / ' + (o.services.up + o.services.down + o.services.unknown)"
+                    [tone]="o.services.down ? 'warn' : 'ok'" [hint]="o.services.down + ' down right now'"
+                    link="../services" [query]="o.services.down ? { state: 'DOWN' } : null"
+                    [linkHint]="o.services.down ? 'Show services that are down' : 'Open service health'" />
+    </div>
+  </app-card-group>
 }
 
-<section class="grid-2">
-  <div class="card">
-    <div class="section-head">
-      <div class="card-title">Top issues</div>
-      <span class="spacer"></span>
-      <a class="link-more" routerLink="../issues">All {{ issueCounts().total }} issues →</a>
+<app-card-group heading="Where to look next" icon="explore"
+                description="The most urgent open issues, and how each environment is doing: size, services, builds. Click any line for its details.">
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-head">
+        <div class="card-title">Top issues</div>
+        <span class="spacer"></span>
+        <a class="link-more" routerLink="../issues">All {{ issueCounts().total }} issues →</a>
+      </div>
+      @if (topIssues().length) {
+        <ul class="issues">
+          @for (i of topIssues(); track $index) {
+            <li>
+              <app-status-chip [status]="i.severity" />
+              <div class="issue-body">
+                <a class="issue-title" href="" (click)="$event.preventDefault(); open(i.link)">{{ i.title }}</a>
+                <div class="issue-meta">{{ i.area }} · {{ ago(i.since) }}{{ i.owner ? ' · owner ' + i.owner : '' }}</div>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else if (report.hasValue()) {
+        <div class="all-clear"><img src="/img/all-clear.svg" alt="" width="72" height="54" /> No open issues</div>
+      }
     </div>
-    @if (topIssues().length) {
-      <ul class="issues">
-        @for (i of topIssues(); track $index) {
+
+    <div class="card">
+      <div class="section-head">
+        <div class="card-title">Deployment footprint by environment</div>
+        <span class="spacer"></span>
+        <a class="link-more" routerLink="../environments">Environment status →</a>
+      </div>
+      @if (envSlices().length) {
+        <app-donut [slices]="envSlices()" [size]="112" centreLabel="paths" ariaLabel="Deployment paths per environment" />
+      }
+      <ul class="footprint" aria-label="Environments">
+        @for (e of footprint(); track e.code) {
           <li>
-            <app-status-chip [status]="i.severity" />
-            <div class="issue-body">
-              <a class="issue-title" href="" (click)="$event.preventDefault(); open(i.link)">{{ i.title }}</a>
-              <div class="issue-meta">{{ i.area }} · {{ ago(i.since) }}{{ i.owner ? ' · owner ' + i.owner : '' }}</div>
+            <div class="fp-head">
+              <i [style.background]="e.color" aria-hidden="true"></i>
+              <a class="fp-name" routerLink="/inventory/deployments" [queryParams]="{ env: e.code }">{{ e.name }}</a>
+              <span class="fp-cat" [class.prod]="e.prod">{{ e.prod ? 'Production' : 'Non-production' }}</span>
+              <span class="spacer"></span>
+              <span class="fp-paths">{{ e.applications }} apps · {{ e.paths }} paths</span>
+            </div>
+            <div class="fp-facts">
+              <a class="fact" routerLink="../services" [queryParams]="e.down ? { env: e.code, state: 'DOWN' } : { env: e.code }"
+                 [class.bad]="e.down > 0" [attr.aria-label]="e.name + ' services: ' + e.up + ' up, ' + e.down + ' down'">
+                <mat-icon aria-hidden="true">monitor_heart</mat-icon>{{ e.up }} up{{ e.down ? ' · ' + e.down + ' down' : '' }}
+              </a>
+              <a class="fact" routerLink="../environments" [class.warn]="(e.successRate ?? 100) < 80"
+                 [attr.aria-label]="e.name + ' build success ' + (e.successRate ?? 'not available')">
+                <mat-icon aria-hidden="true">rocket_launch</mat-icon>{{ e.successRate === null ? 'no builds' : e.successRate + '% builds pass' }}
+              </a>
+              @if (e.failing) {
+                <a class="fact bad" routerLink="../environments" [attr.aria-label]="e.failing + ' applications failing in ' + e.name">
+                  <mat-icon aria-hidden="true">error</mat-icon>{{ e.failing }} app{{ e.failing === 1 ? '' : 's' }} failing
+                </a>
+              }
+              <span class="fact muted"><mat-icon aria-hidden="true">schedule</mat-icon>{{ e.lastBuildAt ? 'last build ' + ago(e.lastBuildAt) : 'no recent build' }}</span>
             </div>
           </li>
         }
       </ul>
-    } @else if (report.hasValue()) {
-      <div class="all-clear"><img src="/img/all-clear.svg" alt="" width="72" height="54" /> No open issues</div>
-    }
-  </div>
-
-  <div class="card">
-    <div class="section-head">
-      <div class="card-title">Deployment footprint by environment</div>
-      <span class="spacer"></span>
-      <a class="link-more" routerLink="../environments">Environment status →</a>
     </div>
-    @if (envSlices().length) {
-      <app-donut [slices]="envSlices()" centreLabel="paths" ariaLabel="Deployment paths per environment" />
-    }
   </div>
-</section>
+</app-card-group>

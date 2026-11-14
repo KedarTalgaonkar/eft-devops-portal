@@ -41,6 +41,7 @@ export interface Totals {
   success: number;
   failed: number;
   aborted: number;
+  unstable: number;
   successRate: number | null;
 }
 
@@ -61,6 +62,7 @@ export function totals(rows: PipelineMetric[]): Totals {
     success: t.success,
     failed: t.failed,
     aborted: t.aborted,
+    unstable: t.unstable,
     successRate: finished ? Math.round((t.success * 1000) / finished) / 10 : null,
   };
 }

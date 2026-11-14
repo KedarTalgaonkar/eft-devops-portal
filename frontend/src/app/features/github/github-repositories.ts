@@ -1,4 +1,4 @@
-import { Component, computed, input, linkedSignal, signal } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { apiUrl } from '../../core/api';
@@ -57,7 +57,8 @@ import { CommitActivity, RepositoryInfo, TeamSummary } from './github.models';
 export class GithubRepositoriesPage {
   readonly team = input<string>();
   protected readonly chosenTeam = linkedSignal(() => this.team() ?? null);
-  protected readonly repo = signal<string | null>(null);
+  readonly repoParam = input<string | undefined>(undefined, { alias: 'repo' });
+  protected readonly repo = linkedSignal<string | null>(() => this.repoParam() ?? null);
 
   protected readonly teams = httpResource<TeamSummary[]>(() => apiUrl('github/teams'), { defaultValue: [] });
   protected readonly selectedTeam = computed(() => this.chosenTeam() ?? this.teams.value()[0]?.slug ?? null);
@@ -77,7 +78,9 @@ export class GithubRepositoriesPage {
     })),
   );
   protected readonly authors = computed(() =>
-    (this.commits.value()?.topAuthors ?? []).slice(0, 6).map((a) => ({ label: a.author, value: a.commits })),
+    (this.commits.value()?.topAuthors ?? []).slice(0, 6).map((a) => ({
+      label: a.author, value: a.commits, hint: 'commits in 30 days · click for their pull requests', link: '../pulls', query: { q: a.author, state: 'all' },
+    })),
   );
 
   protected pickTeam(slug: string): void {

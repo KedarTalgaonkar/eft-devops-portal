@@ -60,10 +60,21 @@
 
 .status-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   color: var(--app-muted);
   font-size: 13px;
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+a.btn {
+  text-decoration: none;
 }
 
 .areas {
@@ -163,4 +174,100 @@
   gap: 12px;
   color: var(--ok);
   font-weight: 600;
+}
+
+// ---- deployment footprint: one line per environment ----
+.footprint {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.footprint li {
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fp-head i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.fp-name {
+  font-weight: 600;
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.fp-name:hover {
+  color: var(--eu-navy-600);
+  text-decoration: underline;
+}
+
+.fp-cat {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--neutral-soft);
+  color: var(--app-muted);
+}
+
+.fp-cat.prod {
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.fp-paths {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.fp-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12.5px;
+}
+
+.fp-facts .fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--app-muted);
+  text-decoration: none;
+}
+
+.fp-facts a.fact:hover {
+  color: var(--eu-navy-600);
+  text-decoration: underline;
+}
+
+.fp-facts .fact.bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.fp-facts .fact.warn {
+  color: var(--warn);
+}
+
+.fp-facts mat-icon {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
 }

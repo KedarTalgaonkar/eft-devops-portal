@@ -41,9 +41,6 @@
     }
 
     <div class="foot">
-      @if (dataMode(); as mode) {
-        <span class="mode" [class.live]="mode === 'Live data'">{{ mode }}</span>
-      }
       <span class="foot-note">EFT · Euronet India</span>
     </div>
   </aside>
@@ -57,6 +54,7 @@
       </button>
       <app-brand-mark [compact]="true" />
     </div>
+    <app-announcement-bar />
     <main id="main">
       <router-outlet />
     </main>

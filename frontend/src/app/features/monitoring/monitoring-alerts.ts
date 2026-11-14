@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -46,7 +46,8 @@ import { AlertInfo } from './monitoring.models';
 })
 export class MonitoringAlertsPage {
   protected readonly ago = ago;
-  protected readonly state = signal('');
+  readonly stateParam = input<string | undefined>(undefined, { alias: 'state' });
+  protected readonly state = linkedSignal(() => (['firing', 'pending'].includes(this.stateParam() ?? '') ? this.stateParam()! : ''));
   protected readonly alerts = httpResource<AlertInfo[]>(() => apiUrl('monitoring/alerts'), { defaultValue: [] });
   protected readonly rows = computed(() => this.alerts.value().filter((a) => !this.state() || a.state === this.state()));
 

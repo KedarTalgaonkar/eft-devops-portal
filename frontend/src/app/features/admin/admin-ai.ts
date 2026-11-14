@@ -6,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { AiStatus } from '../../core/ai';
 import { KpiCard } from '../../shared/kpi-card';
+import { CardGroup } from '../../shared/card-group';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 
@@ -32,7 +33,7 @@ const FEATURE_LABEL: Record<string, string> = {
 /** AI settings in effect (read-only: set through environment variables), budget, usage, feedback and recent calls. */
 @Component({
   selector: 'app-admin-ai',
-  imports: [DatePipe, DecimalPipe, MatIconModule, MatTooltipModule, KpiCard, LoadState, StatusChip],
+  imports: [DatePipe, DecimalPipe, MatIconModule, MatTooltipModule, KpiCard, LoadState, StatusChip, CardGroup],
   template: `
     <app-load-state [loading]="view.isLoading()" [error]="view.error()" what="AI usage" (retry)="view.reload()" />
     @if (view.hasValue()) {
@@ -55,6 +56,7 @@ const FEATURE_LABEL: Record<string, string> = {
         <p class="faint">Settings come from environment variables (AI_MODE, AI_PROVIDER, AI_MODEL, AI_MONTHLY_BUDGET_USD, …); see docs/ai.md.</p>
       </section>
 
+      <app-card-group heading="Usage this month" icon="data_usage" description="Estimated spend against the monthly budget, request volume, failures and how users rate the answers.">
       <section class="grid" aria-label="Usage this month">
         <app-kpi-card label="Estimated spend this month" icon="payments" unit="USD" [value]="(v.usage.spentThisMonthUsd | number: '1.2-2') ?? '0'"
                       [hint]="'Budget ' + v.usage.monthlyBudgetUsd + ' USD · ' + budgetUsed() + '% used'"
@@ -64,6 +66,7 @@ const FEATURE_LABEL: Record<string, string> = {
         <app-kpi-card label="Answers rated helpful" icon="thumb_up" [unit]="helpfulRate() === null ? '' : '%'" [value]="helpfulRate() ?? 'No ratings yet'"
                       [hint]="votes() + (votes() === 1 ? ' rating' : ' ratings')" tone="info" />
       </section>
+      </app-card-group>
 
       <section class="grid-2">
         <div class="card">

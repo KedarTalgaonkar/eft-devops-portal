@@ -50,7 +50,7 @@ public class BuildExplanationService {
               expired, network, timeouts caused by another system).
             - If the log does not show the cause, say so with category UNKNOWN and confidence LOW rather than guessing.
             - Fix steps must be concrete actions for this pipeline, not generic advice. No more than five.
-            - Write plain, short English. No markdown.
+            - Write plain, short Indian English (British spelling: analyse, behaviour, centre). No markdown.
             """;
 
     private final AiGateway gateway;

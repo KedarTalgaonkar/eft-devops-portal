@@ -8,7 +8,7 @@ import { Auth } from '../../core/auth';
 import { Environments } from '../../core/environments';
 import { EnvFilter } from '../../shared/env-filter';
 import { LoadState } from '../../shared/load-state';
-import { DeploymentView, ImportResult } from './inventory.models';
+import { DeploymentView, ImportResult, javaLine, tomcatLine } from './inventory.models';
 
 /** Support view: every deployment path with versions, setup status, Jenkins job and repositories; Excel import. */
 @Component({
@@ -35,8 +35,15 @@ export class InventoryDeploymentsPage {
 
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');
-  protected readonly env = signal('');
-  protected readonly onlyPending = signal(false);
+  /** ?env=SIT&java=Java 8&tomcat=Tomcat 9&pending=1 deep links from the overview charts. */
+  readonly envParam = input<string | undefined>(undefined, { alias: 'env' });
+  readonly java = input<string>();
+  readonly tomcat = input<string>();
+  readonly pending = input<string>();
+  protected readonly env = linkedSignal(() => this.envParam() ?? '');
+  protected readonly javaFilter = linkedSignal(() => this.java() ?? '');
+  protected readonly tomcatFilter = linkedSignal(() => this.tomcat() ?? '');
+  protected readonly onlyPending = linkedSignal(() => !!this.pending() && this.pending() !== '0');
   protected readonly uploading = signal(false);
   protected readonly lastImport = signal<ImportResult | null>(null);
   protected readonly editingJob = signal<number | null>(null);
@@ -51,6 +58,8 @@ export class InventoryDeploymentsPage {
     return this.deployments
       .value()
       .filter((d) => !this.onlyPending() || !d.tomcatAdminDone || !d.buildXmlDone)
+      .filter((d) => !this.javaFilter() || javaLine(d.javaVersion) === this.javaFilter())
+      .filter((d) => !this.tomcatFilter() || tomcatLine(d.tomcatVersion) === this.tomcatFilter())
       .filter(
         (d) =>
           !q ||

@@ -23,9 +23,15 @@ async function render(roles: PortalRole[]) {
 
   const fixture = TestBed.createComponent(PortalLayout);
   fixture.detectChanges();
-  http
-    .expectOne('/api/dashboard/integrations')
-    .flush([{ key: 'jenkins', name: 'Jenkins', mode: 'MOCK', reachable: true, endpoint: null, message: null }]);
+  const soon = new Date(Date.now() + 3_600_000).toISOString();
+  http.expectOne('/api/announcements/active').flush([
+    { id: 1, kind: 'RELEASE', message: 'IMPS 2.4 release to UAT tonight', linkUrl: '/pipelines/deployments', linkLabel: 'Details',
+      startsAt: new Date().toISOString(), endsAt: soon, status: 'ACTIVE', createdBy: 'release-mgr', createdAt: new Date().toISOString(),
+      updatedBy: null, updatedAt: null },
+    { id: 2, kind: 'INCIDENT', message: 'SIT switch is down', linkUrl: null, linkLabel: null,
+      startsAt: new Date().toISOString(), endsAt: soon, status: 'ACTIVE', createdBy: 'oncall', createdAt: new Date().toISOString(),
+      updatedBy: null, updatedAt: null },
+  ]);
   http.match('brand/brand.json').forEach((r) => r.flush({ logo: '', logoAlt: 'Euronet', region: 'India', product: 'EFT DevOps Portal' }));
   await fixture.whenStable();
   fixture.detectChanges();
@@ -33,13 +39,18 @@ async function render(roles: PortalRole[]) {
 }
 
 describe('PortalLayout', () => {
-  it('shows module navigation, the data mode and the signed-in user', async () => {
+  it('shows module navigation, live announcements and the signed-in user', async () => {
     const el = await render(['VIEWER']);
     const visible = NAV_GROUPS.filter((g) => !g.requires).flatMap((g) => g.items);
     expect(el.querySelectorAll('nav a.item').length).toBe(visible.length);
     expect(el.textContent).toContain('Pipelines');
     expect(el.textContent).not.toContain('Users & audit log');
-    expect(el.querySelector('.mode')?.textContent).toContain('Sample data');
+    const items = el.querySelectorAll('app-announcement-bar .item');
+    expect(items.length).toBe(2);
+    expect(items[0].textContent).toContain('IMPS 2.4 release to UAT tonight');
+    expect(items[0].querySelector('button.close')).not.toBeNull();
+    // incidents cannot be hidden
+    expect(items[1].querySelector('button.close')).toBeNull();
     expect(el.querySelector('.user')?.textContent).toContain('Priya Kulkarni');
     expect(el.querySelector('.user')?.textContent).toContain('Viewer');
   });

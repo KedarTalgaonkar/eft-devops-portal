@@ -5,6 +5,16 @@
   <label class="row">
     <input type="checkbox" [checked]="onlyPending()" (change)="onlyPending.set($any($event.target).checked)" /> Setup pending only
   </label>
+  @if (javaFilter()) {
+    <button type="button" class="chip-btn" aria-pressed="true" (click)="javaFilter.set('')" [attr.aria-label]="'Remove filter ' + javaFilter()">
+      {{ javaFilter() }} ✕
+    </button>
+  }
+  @if (tomcatFilter()) {
+    <button type="button" class="chip-btn" aria-pressed="true" (click)="tomcatFilter.set('')" [attr.aria-label]="'Remove filter ' + tomcatFilter()">
+      {{ tomcatFilter() }} ✕
+    </button>
+  }
   @if (canEdit) {
     <input #file type="file" accept=".xlsx" hidden (change)="upload(file)" />
     <button class="btn primary" type="button" [disabled]="uploading()" (click)="file.click()">

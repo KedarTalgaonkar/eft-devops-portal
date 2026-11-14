@@ -30,7 +30,9 @@ export const routes: Routes = [
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
           { path: 'overview', title: 'Command centre' + T, loadComponent: () => import('./features/dashboard/dashboard-overview').then((m) => m.DashboardOverviewPage) },
+          { path: 'digest', title: 'Executive digest' + T, loadComponent: () => import('./features/dashboard/dashboard-digest').then((m) => m.DashboardDigestPage) },
           { path: 'issues', title: 'Issues' + T, loadComponent: () => import('./features/dashboard/dashboard-issues').then((m) => m.DashboardIssuesPage) },
+          { path: 'announcements', title: 'Announcements' + T, loadComponent: () => import('./features/dashboard/dashboard-announcements').then((m) => m.DashboardAnnouncementsPage) },
           { path: 'environments', title: 'Environment status' + T, loadComponent: () => import('./features/dashboard/dashboard-environments').then((m) => m.DashboardEnvironmentsPage) },
           { path: 'services', title: 'Service health' + T, loadComponent: () => import('./features/dashboard/dashboard-services').then((m) => m.DashboardServicesPage) },
           { path: 'integrations', title: 'Integrations' + T, loadComponent: () => import('./features/dashboard/dashboard-integrations').then((m) => m.DashboardIntegrationsPage) },

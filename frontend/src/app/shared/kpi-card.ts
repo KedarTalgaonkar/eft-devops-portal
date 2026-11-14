@@ -1,17 +1,20 @@
 import { Component, computed, input } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Sparkline } from './charts';
 
 /**
- * Executive KPI: big figure, change against the previous period (coloured by whether that is good),
- * an optional sparkline and a one-line explanation.
+ * Executive KPI: big figure with its change against the previous period on the same line (coloured by whether
+ * that is good), an optional sparkline and a one-line explanation. With `link` the whole card opens the detail
+ * view behind the number (optionally filtered with `query`).
  */
 @Component({
   selector: 'app-kpi-card',
-  imports: [MatIconModule, MatTooltipModule, Sparkline],
+  imports: [NgTemplateOutlet, RouterLink, MatIconModule, MatTooltipModule, Sparkline],
   template: `
-    <div class="card kpi" [class]="'card kpi tone-' + (tone() ?? 'none')">
+    <ng-template #body>
       <div class="top">
         <span class="label">
           @if (icon()) {
@@ -19,14 +22,18 @@ import { Sparkline } from './charts';
           }
           {{ label() }}
         </span>
-        @if (deltaText(); as d) {
-          <span class="delta" [class.good]="deltaGood() === true" [class.bad]="deltaGood() === false" [matTooltip]="'Previous period: ' + previous() + unit()">
-            {{ d }}
-          </span>
+        @if (link()) {
+          <mat-icon class="go" aria-hidden="true">arrow_forward</mat-icon>
         }
       </div>
       <div class="value-row">
-        <span class="value">{{ value() ?? '—' }}<small>{{ unit() }}</small></span>
+        <span class="figure">
+          <span class="value">{{ value() ?? '—' }}<small>{{ unit() }}</small></span>
+          @if (deltaText(); as d) {
+            <span class="delta" [class.good]="deltaGood() === true" [class.bad]="deltaGood() === false"
+                  [matTooltip]="'Previous period: ' + previous() + unit()">{{ d }}</span>
+          }
+        </span>
         @if (trend().length > 1) {
           <app-sparkline [values]="trend()" [color]="sparkColor()" />
         }
@@ -34,10 +41,28 @@ import { Sparkline } from './charts';
       @if (hint()) {
         <div class="hint">{{ hint() }}</div>
       }
-    </div>
+    </ng-template>
+
+    @if (link(); as l) {
+      <a class="card kpi linked" [class]="'card kpi linked tone-' + (tone() ?? 'none')" [routerLink]="l" [queryParams]="query()"
+         [attr.aria-label]="label() + ': ' + (value() ?? '—') + unit() + '. ' + (linkHint() ?? 'Open details')">
+        <ng-container [ngTemplateOutlet]="body" />
+      </a>
+    } @else {
+      <div class="card kpi" [class]="'card kpi tone-' + (tone() ?? 'none')">
+        <ng-container [ngTemplateOutlet]="body" />
+      </div>
+    }
   `,
   styles: `
+    :host { display: block; min-width: 0; }
     .kpi { display: flex; flex-direction: column; gap: 6px; height: 100%; position: relative; overflow: hidden; }
+    a.kpi { color: inherit; text-decoration: none; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    a.kpi:hover, a.kpi:focus-visible { border-color: var(--eu-navy-400); box-shadow: 0 6px 22px rgba(15, 27, 51, 0.13); transform: translateY(-1px); }
+    .go { font-size: 18px; width: 18px; height: 18px; color: var(--app-faint); transition: color .15s, transform .15s; }
+    a.kpi:hover .go { color: var(--eu-navy-600); transform: translateX(2px); }
+    .figure { display: inline-flex; align-items: baseline; flex-wrap: nowrap; gap: 10px; min-width: 0; flex: none; }
+    app-sparkline { flex: 0 1 120px; min-width: 36px; }
     .kpi::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--app-line-strong); }
     .tone-ok::before { background: var(--ok); }
     .tone-bad::before { background: var(--bad); }
@@ -46,7 +71,8 @@ import { Sparkline } from './charts';
     .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .label { display: inline-flex; align-items: center; gap: 6px; color: var(--app-muted); font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
     .label mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .delta { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--neutral-soft); color: var(--app-muted); font-family: var(--font-mono); }
+    .delta { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--neutral-soft); color: var(--app-muted);
+      font-family: var(--font-mono); white-space: nowrap; position: relative; top: -3px; }
     .delta.good { background: var(--ok-soft); color: var(--ok); }
     .delta.bad { background: var(--bad-soft); color: var(--bad); }
     .value-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
@@ -72,6 +98,11 @@ export class KpiCard {
   /** 'pts' for percentages (absolute points), '%' for relative change. */
   readonly deltaMode = input<'pts' | '%'>('%');
   readonly trend = input<number[]>([]);
+  /** Router link to the detail view behind the number; makes the whole card clickable. */
+  readonly link = input<string | null>(null);
+  readonly query = input<Record<string, string | number | boolean | null | undefined> | null>(null);
+  /** Read out to screen readers, e.g. "Show failing pipelines". */
+  readonly linkHint = input<string>();
 
   protected readonly deltaValue = computed(() => {
     const c = this.current();

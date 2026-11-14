@@ -54,7 +54,8 @@ import { GATE_LABEL, GateStatus, QualityProject } from './quality.models';
 export class QualityProjectsPage {
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');
-  protected readonly gate = signal<GateStatus | ''>('');
+  readonly gateParam = input<string | undefined>(undefined, { alias: 'gate' });
+  protected readonly gate = linkedSignal<GateStatus | ''>(() => (['OK', 'WARN', 'ERROR', 'NONE'].includes(this.gateParam() ?? '') ? (this.gateParam() as GateStatus) : ''));
   protected readonly label = GATE_LABEL;
   protected readonly projects = httpResource<QualityProject[]>(() => apiUrl('quality/projects'), { defaultValue: [] });
   protected readonly rows = computed(() => {

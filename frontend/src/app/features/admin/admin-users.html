@@ -41,7 +41,7 @@
               <select class="role-select" [value]="topRole(x)" [disabled]="isSelf(x)" [attr.aria-label]="'Role of ' + x.username"
                       (change)="setRole(x, $any($event.target).value)">
                 @for (role of roleOptions; track role) {
-                  <option [value]="role">{{ role | titlecase }}</option>
+                  <option [value]="role" [selected]="role === topRole(x)">{{ role | titlecase }}</option>
                 }
               </select>
             </td>

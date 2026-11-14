@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { apiUrl } from '../../core/api';
@@ -11,6 +11,9 @@ import { MetricSample, ScrapeTarget, toHostRows } from './monitoring.models';
   selector: 'app-monitoring-infrastructure',
   imports: [DatePipe, DecimalPipe, LoadState, StatusChip],
   template: `
+    <div class="filters">
+      <input class="search" type="search" placeholder="Search host" aria-label="Search hosts" [value]="search()" (input)="search.set($any($event.target).value)" />
+    </div>
     <section class="section">
       <div class="section-head"><h2 class="section-title">Hosts</h2><span class="section-sub">Worst first; amber at 75%, red at 90%</span></div>
       <app-load-state [loading]="metrics.isLoading()" [error]="metrics.error()" what="host metrics" (retry)="metrics.reload()" />
@@ -68,7 +71,13 @@ import { MetricSample, ScrapeTarget, toHostRows } from './monitoring.models';
 export class MonitoringInfrastructurePage {
   protected readonly metrics = httpResource<MetricSample[]>(() => apiUrl('monitoring/metrics'), { defaultValue: [] });
   protected readonly targets = httpResource<ScrapeTarget[]>(() => apiUrl('monitoring/targets'), { defaultValue: [] });
-  protected readonly hosts = computed(() => toHostRows(this.metrics.value()));
+  /** ?q=host deep link from the overview. */
+  readonly q = input<string>();
+  protected readonly search = linkedSignal(() => this.q() ?? '');
+  protected readonly hosts = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    return toHostRows(this.metrics.value()).filter((h) => !q || h.host.toLowerCase().includes(q));
+  });
   protected readonly sortedTargets = computed(() => [...this.targets.value()].sort((a, b) => (a.health === 'up' ? 1 : 0) - (b.health === 'up' ? 1 : 0)));
 
   protected level(v: number): string {

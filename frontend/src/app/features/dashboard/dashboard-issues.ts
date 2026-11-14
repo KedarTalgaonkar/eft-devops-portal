@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -63,9 +63,13 @@ export class DashboardIssuesPage {
   private readonly router = inject(Router);
   protected readonly envs = inject(Environments);
   protected readonly ago = ago;
-  protected readonly search = signal('');
-  protected readonly area = signal('');
-  protected readonly minSeverity = signal<Severity>('LOW');
+  protected readonly search = linkedSignal(() => this.q() ?? '');
+  /** ?area=Delivery&severity=HIGH&q= deep links from cards elsewhere. */
+  readonly areaParam = input<string | undefined>(undefined, { alias: 'area' });
+  readonly severity = input<string>();
+  readonly q = input<string>();
+  protected readonly area = linkedSignal(() => this.areaParam() ?? '');
+  protected readonly minSeverity = linkedSignal<Severity>(() => (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(this.severity() ?? '') ? (this.severity() as Severity) : 'LOW'));
 
   protected readonly report = httpResource<AttentionReport>(() => apiUrl('dashboard/attention'));
   protected readonly areas = computed(() => [...new Set((this.report.value()?.items ?? []).map((i) => i.area))]);

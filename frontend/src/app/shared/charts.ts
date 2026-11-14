@@ -1,13 +1,15 @@
 import { Component, computed, input } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 /** Tiny inline trend line for KPI cards. */
 @Component({
   selector: 'app-sparkline',
+  styles: ':host { display: block; min-width: 0; } svg { display: block; }',
   template: `
     @if (points()) {
-      <svg [attr.viewBox]="'0 0 ' + width() + ' ' + height()" [attr.width]="width()" [attr.height]="height()" aria-hidden="true">
+      <svg [attr.viewBox]="'0 0 ' + width() + ' ' + height()" width="100%" [attr.height]="height()" preserveAspectRatio="none" aria-hidden="true">
         <polyline [attr.points]="area()" [attr.fill]="color()" fill-opacity="0.12" stroke="none" />
         <polyline [attr.points]="points()" fill="none" [attr.stroke]="color()" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
       </svg>
@@ -108,15 +110,16 @@ export class StackedBars {
   }
 }
 
-export interface Slice {
+export interface Slice extends ChartLink {
   label: string;
   value: number;
   color: string;
 }
 
-/** Donut with a centre figure and a legend; used for gate status, severity and environment mix. */
+/** Donut with a centre figure and a legend; legend entries with a link open the matching detail view. */
 @Component({
   selector: 'app-donut',
+  imports: [RouterLink],
   template: `
     <div class="wrap">
       <svg viewBox="0 0 42 42" [attr.width]="size()" [attr.height]="size()" role="img" [attr.aria-label]="ariaLabel()">
@@ -130,7 +133,15 @@ export interface Slice {
       </svg>
       <ul class="legend">
         @for (s of slices(); track s.label) {
-          <li><i [style.background]="s.color"></i><span>{{ s.label }}</span><b class="num">{{ s.value }}</b></li>
+          <li>
+            @if (s.link) {
+              <a [routerLink]="s.link" [queryParams]="s.query ?? null" [attr.aria-label]="s.label + ': ' + s.value">
+                <i [style.background]="s.color"></i><span class="lbl">{{ s.label }}</span><b class="num">{{ s.value }}</b>
+              </a>
+            } @else {
+              <i [style.background]="s.color"></i><span>{{ s.label }}</span><b class="num">{{ s.value }}</b>
+            }
+          </li>
         }
       </ul>
     </div>
@@ -140,7 +151,11 @@ export interface Slice {
     .big { font-size: 8px; font-weight: 700; fill: var(--app-text); font-family: 'IBM Plex Sans', sans-serif; }
     .small { font-size: 3.2px; fill: var(--app-muted); font-family: 'IBM Plex Sans', sans-serif; text-transform: uppercase; letter-spacing: .1em; }
     .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 150px; font-size: 13px; }
-    .legend li { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 8px; }
+    .legend li, .legend a { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 8px; }
+    .legend li:has(> a) { display: block; }
+    .legend a { margin: -3px -6px; padding: 3px 6px; border-radius: 6px; color: inherit; text-decoration: none; }
+    .legend a:hover, .legend a:focus-visible { background: var(--neutral-soft); }
+    .legend a:hover .lbl { color: var(--eu-navy-600); text-decoration: underline; }
     .legend i { width: 10px; height: 10px; border-radius: 3px; }
   `,
 })
@@ -166,32 +181,52 @@ export class Donut {
   });
 }
 
-export interface BarItem {
+/** Router link with optional query parameters, for chart items that open a filtered detail view. */
+export interface ChartLink {
+  link?: string;
+  query?: Record<string, string | number | boolean | null | undefined>;
+}
+
+export interface BarItem extends ChartLink {
   label: string;
   value: number;
   hint?: string;
   color?: string;
 }
 
-/** Ranked horizontal bars ("top N" lists). */
+/** Ranked horizontal bars ("top N" lists). Items with a link open the matching detail view. */
 @Component({
   selector: 'app-bar-list',
-  imports: [MatTooltipModule],
+  imports: [MatTooltipModule, RouterLink, NgTemplateOutlet],
   template: `
+    <ng-template #bar let-b>
+      <div class="head"><span class="label" [matTooltip]="b.label" [matTooltipDisabled]="b.label.length < 28">{{ b.label }}</span>
+        <b class="num">{{ b.value }}{{ unit() }}</b></div>
+      <div class="track"><div class="fill" [style.width.%]="(b.value / max()) * 100" [style.background]="b.color ?? color()"></div></div>
+      @if (b.hint) {
+        <div class="hint">{{ b.hint }}</div>
+      }
+    </ng-template>
     <ul>
       @for (b of items(); track b.label) {
         <li>
-          <div class="head"><span class="label" [matTooltip]="b.label" [matTooltipDisabled]="b.label.length < 28">{{ b.label }}</span><b class="num">{{ b.value }}{{ unit() }}</b></div>
-          <div class="track"><div class="fill" [style.width.%]="(b.value / max()) * 100" [style.background]="b.color ?? color()"></div></div>
-          @if (b.hint) {
-            <div class="hint">{{ b.hint }}</div>
+          @if (b.link) {
+            <a class="item" [routerLink]="b.link" [queryParams]="b.query ?? null" [attr.aria-label]="b.label + ': ' + b.value + unit()">
+              <ng-container [ngTemplateOutlet]="bar" [ngTemplateOutletContext]="{ $implicit: b }" />
+            </a>
+          } @else {
+            <ng-container [ngTemplateOutlet]="bar" [ngTemplateOutletContext]="{ $implicit: b }" />
           }
         </li>
       }
     </ul>
   `,
   styles: `
-    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    li { padding: 3px 0; }
+    a.item { display: block; margin: -4px -8px; padding: 4px 8px; border-radius: 8px; color: inherit; text-decoration: none; }
+    a.item:hover, a.item:focus-visible { background: var(--neutral-soft); }
+    a.item:hover .label { color: var(--eu-navy-600); text-decoration: underline; }
     .head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
     .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .track { height: 8px; border-radius: 4px; background: var(--neutral-soft); margin-top: 5px; overflow: hidden; }

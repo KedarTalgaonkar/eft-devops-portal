@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { apiUrl } from '../../core/api';
@@ -58,7 +58,9 @@ const TYPE_LABEL: Record<ChangeView['changeType'], string> = {
 export class InventoryChangesPage {
   protected readonly envs = inject(Environments);
   protected readonly label = TYPE_LABEL;
-  protected readonly search = signal('');
+  /** ?q=application deep link from the overview. */
+  readonly q = input<string>();
+  protected readonly search = linkedSignal(() => this.q() ?? '');
   protected readonly type = signal('');
   protected readonly changes = httpResource<ChangeView[]>(() => apiUrl('inventory/changes', { limit: 1000 }), { defaultValue: [] });
   protected readonly rows = computed(() => {

@@ -15,7 +15,7 @@ import { PipelineFilters } from './pipeline-filters';
         <label class="muted" for="period">Period</label>
         <select id="period" class="select" [value]="filters.days()" (change)="filters.days.set(+$any($event.target).value)">
           @for (d of filters.dayOptions; track d) {
-            <option [value]="d">Last {{ d }} days</option>
+            <option [value]="d" [selected]="d === filters.days()">Last {{ d }} days</option>
           }
         </select>
       </div>

@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { apiUrl } from '../../core/api';
 import { Environments } from '../../core/environments';
 import { KpiCard } from '../../shared/kpi-card';
+import { CardGroup } from '../../shared/card-group';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { BuildsDialog } from './builds-dialog';
@@ -15,7 +16,7 @@ import { PipelineMetric } from './pipelines.models';
 /** Support view: the "EFT Pipeline Metrics" table for every project × environment, with drill-down. */
 @Component({
   selector: 'app-pipelines-all',
-  imports: [DatePipe, DecimalPipe, KpiCard, LoadState, StatusChip],
+  imports: [DatePipe, DecimalPipe, KpiCard, LoadState, StatusChip, CardGroup],
   templateUrl: './pipelines-all.html',
 })
 export class PipelinesAllPage {
@@ -26,7 +27,11 @@ export class PipelinesAllPage {
   /** ?q= deep link from the overview / command centre. */
   readonly q = input<string>();
   protected readonly search = linkedSignal(() => this.q() ?? '');
-  protected readonly onlyFailing = signal(false);
+  /** ?failing=1 deep link: only pipelines with failures. */
+  readonly failing = input<string>();
+  protected readonly onlyFailing = linkedSignal(() => !!this.failing() && !['0', 'false', 'now'].includes(this.failing()!));
+  /** ?failing=now: only pipelines whose latest build failed (the "failing now" KPI). */
+  protected readonly failingNow = linkedSignal(() => this.failing() === 'now');
   protected readonly sort = signal<SortState>({ key: 'project', dir: 1 });
 
   protected readonly metrics = httpResource<PipelineMetric[]>(() =>
@@ -38,9 +43,18 @@ export class PipelinesAllPage {
       return [];
     }
     const list = filterAndSort(this.metrics.value(), this.search(), this.sort(), this.envs.codes());
-    return this.onlyFailing() ? list.filter((r) => r.failed > 0 || r.lastBuild?.result === 'FAILURE' || r.error) : list;
+    const now = this.failingNow() ? list.filter((r) => r.lastBuild?.result === 'FAILURE') : list;
+    return this.onlyFailing() ? now.filter((r) => r.failed > 0 || r.lastBuild?.result === 'FAILURE' || r.error) : now;
   });
   protected readonly totals = computed(() => totals(this.rows()));
+  protected readonly failingCount = computed(() => this.rows().filter((r) => r.failed > 0).length);
+
+  /** Share of finished builds, rounded. */
+  protected pct(n: number): number {
+    const t = this.totals();
+    const finished = t.success + t.failed + t.aborted + t.unstable;
+    return finished ? Math.round((n / finished) * 1000) / 10 : 0;
+  }
 
   protected sortBy(key: SortKey): void {
     const current = this.sort();

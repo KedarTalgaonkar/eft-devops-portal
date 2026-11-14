@@ -41,7 +41,7 @@ describe('pipeline table helpers', () => {
   });
 
   it('adds up totals and the overall success rate', () => {
-    expect(totals(rows)).toEqual({ totalBuilds: 36, success: 26, failed: 7, aborted: 3, successRate: 72.2 });
+    expect(totals(rows)).toEqual({ totalBuilds: 36, success: 26, failed: 7, aborted: 3, unstable: 0, successRate: 72.2 });
     expect(totals([]).successRate).toBeNull();
   });
 });

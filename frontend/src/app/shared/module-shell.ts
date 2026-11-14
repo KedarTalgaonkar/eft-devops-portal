@@ -1,6 +1,8 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { DataMode } from '../core/data-mode';
 import { ToolLogo, ToolName } from './tool-logo';
 
 export interface ModuleTab {
@@ -17,7 +19,7 @@ export interface ModuleTab {
  */
 @Component({
   selector: 'app-module-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, ToolLogo],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule, ToolLogo],
   template: `
     <header class="hero">
       <div class="hero-inner">
@@ -30,7 +32,14 @@ export interface ModuleTab {
             </span>
           }
           <div class="titles">
-            <span class="eyebrow">{{ eyebrow() }}</span>
+            <span class="eyebrow-row">
+              <span class="eyebrow">{{ eyebrow() }}</span>
+              @if (dataMode.label(); as m) {
+                <a class="data-mode" [class.live]="m === 'Live data'" routerLink="/dashboard/integrations" [matTooltip]="dataMode.explanation()">
+                  <mat-icon aria-hidden="true">{{ m === 'Live data' ? 'sensors' : 'science' }}</mat-icon>{{ m }}
+                </a>
+              }
+            </span>
             <h1>{{ heading() }}</h1>
             @if (subtitle()) {
               <p>{{ subtitle() }}</p>
@@ -64,6 +73,12 @@ export interface ModuleTab {
     .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
     .logos { display: inline-flex; gap: 8px; }
     .titles { flex: 1 1 320px; min-width: 0; }
+    .eyebrow-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+    .data-mode { display: inline-flex; align-items: center; gap: 4px; padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+      background: rgba(245, 158, 11, 0.16); color: var(--eu-saffron); text-decoration: none; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .data-mode.live { background: rgba(0, 163, 161, 0.18); color: var(--eu-teal); border-color: rgba(0, 163, 161, 0.4); }
+    .data-mode:hover { filter: brightness(1.15); }
+    .data-mode mat-icon { font-size: 13px; width: 13px; height: 13px; }
     .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--eu-teal); }
     h1 { color: #fff; font-size: 26px; font-weight: 600; margin: 2px 0 2px; }
     p { margin: 0; color: rgba(255,255,255,.75); font-size: 14px; }
@@ -84,6 +99,7 @@ export class ModuleShell {
   /** Page heading. Deliberately not called "title": that would also become a native title attribute on the whole page. */
   readonly heading = input.required<string>();
   readonly eyebrow = input('Euronet India · EFT');
+  protected readonly dataMode = inject(DataMode);
   readonly subtitle = input<string>();
   readonly logos = input<ToolName[]>([]);
   readonly tabs = input<ModuleTab[]>([]);

@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, input, linkedSignal, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -66,7 +66,9 @@ import { ArtifactInfo, ArtifactRepository } from './artifacts.models';
   `,
 })
 export class ArtifactsBrowsePage {
-  protected readonly selected = signal<string | null>(null);
+  /** ?repo=key deep link from the overview. */
+  readonly repo = input<string>();
+  protected readonly selected = linkedSignal<string | null>(() => this.repo() ?? null);
   protected readonly search = signal('');
   protected readonly repos = httpResource<ArtifactRepository[]>(() => apiUrl('artifacts/repositories'), { defaultValue: [] });
   protected readonly selectedKey = computed(() => this.selected() ?? this.repos.value()[0]?.key ?? null);

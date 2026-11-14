@@ -60,7 +60,13 @@ so the stack runs with no tokens. Switching one tool to `live` needs its URL and
   `features/pipelines/build-explanation.ts` (in the builds dialog), `features/dashboard/digest-card.ts`.
 * Sign-in follows the backend-for-frontend pattern: no tokens in the browser, only an HttpOnly session cookie plus the
   `XSRF-TOKEN` cookie, which Angular echoes as `X-XSRF-TOKEN` (see [security.md](security.md)).
-* `shared/` holds reusable UI: status badges, environment chips, KPI cards, page header, state panels.
+* `shared/` holds reusable UI: status badges, environment chips, KPI cards, card groups (heading + purpose), charts,
+  page header, state panels.
+* Every number is a door: KPI cards (`link` / `query`), bar items and donut legend entries (`link` / `query` on the item)
+  open the detail view behind them, pre-filtered through URL parameters that the detail pages read as inputs, e.g.
+  `/github/pulls?age=7-14`, `/pipelines/all?failing=now`, `/inventory/deployments?env=SIT&java=Java 8`,
+  `/dashboard/services?state=DOWN`, `/quality/projects?gate=ERROR`, `/sbom/scans?scan=<id>`.
+* Locale `en-IN` (Indian English) is set in `app.config.ts`.
 * Every call goes to the relative `/api` path: nginx proxies it in the container, `proxy.conf.json` in `ng serve`.
 
 ## Containers

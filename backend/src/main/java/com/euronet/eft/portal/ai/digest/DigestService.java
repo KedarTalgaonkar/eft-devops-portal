@@ -53,7 +53,8 @@ public class DigestService {
             - Keep the overall status consistent with the data's overall RAG unless the figures clearly contradict it.
             - Actions must be concrete and assigned to the owner named in the data, or 'Unassigned'.
             - Masked values such as [HOST_1] or [EMAIL_1] are placeholders; keep them as they are.
-            - Plain, confident business English. No markdown, no jargon without explanation.
+            - Plain, confident business Indian English (British spelling; Indian digit grouping such as 1,00,000 and
+              lakh / crore for large numbers). No markdown, no jargon without explanation.
             """;
 
     private final AiGateway gateway;

@@ -14,6 +14,9 @@ import java.util.Locale;
 /** Mock mode: writes the digest from the facts with fixed sentence templates (no AI involved). */
 final class MockDigestWriter {
 
+    /** Indian English number formatting (1,00,000). */
+    private static final Locale INDIA = Locale.of("en", "IN");
+
     private MockDigestWriter() {
     }
 
@@ -103,7 +106,7 @@ final class MockDigestWriter {
     }
 
     private static String fmt(Double v) {
-        return v == null ? "0" : String.format(Locale.ROOT, "%,.0f", v);
+        return v == null ? "0" : java.text.NumberFormat.getIntegerInstance(INDIA).format(Math.round(v));
     }
 
     private static String fmt1(Double v) {
