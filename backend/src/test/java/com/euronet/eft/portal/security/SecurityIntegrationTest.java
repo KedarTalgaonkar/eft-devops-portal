@@ -171,6 +171,20 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void administratorsCannotResetTheirOwnPassword() throws Exception {
+        String name = "self-" + UUID.randomUUID().toString().substring(0, 8);
+        long id = users.create(name, null, null, EnumSet.of(PortalRole.ADMIN), TEMP).id();
+        String body = "{\"temporaryPassword\":\"" + NEW + "\"}";
+        // the reset would end the admin's own session before the temporary password could be read
+        mvc.perform(post("/api/admin/users/" + id + "/reset-password").with(user(name).roles("ADMIN")).with(xsrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/admin/users/" + id + "/reset-password").with(user("other-admin").roles("ADMIN")).with(xsrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void loginRequiresCsrf() throws Exception {
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"x\",\"password\":\"y\"}"))

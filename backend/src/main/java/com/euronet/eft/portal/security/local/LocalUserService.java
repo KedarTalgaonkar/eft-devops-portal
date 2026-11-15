@@ -159,6 +159,10 @@ public class LocalUserService implements UserDetailsService {
 
     public UserView resetPassword(long id, String temporaryPassword) {
         LocalUser u = users.findById(id).orElseThrow(() -> new NotFoundException("User", id));
+        if (u.getUsername().equalsIgnoreCase(CurrentUser.nameOrSystem())) {
+            // a reset ends every session of the user, including this one, so the temporary password would be lost
+            throw new IllegalArgumentException("You cannot reset your own password here; use Change password instead");
+        }
         PasswordPolicy.require(temporaryPassword, u.getUsername());
         u.setPasswordHash(encoder.encode(temporaryPassword));
         u.setMustChangePassword(true);

@@ -61,7 +61,8 @@
             <td>{{ x.createdAt | date: 'dd MMM yyyy' }} <span class="muted">by {{ x.createdBy ?? '—' }}</span></td>
             <td>
               <span class="actions">
-                <button class="icon-btn" type="button" (click)="reset(x)" matTooltip="Reset password" aria-label="Reset password"><mat-icon>lock_reset</mat-icon></button>
+                <button class="icon-btn" type="button" (click)="reset(x)" [disabled]="isSelf(x)"
+                        [matTooltip]="isSelf(x) ? 'Use Change password for your own account' : 'Reset password'" aria-label="Reset password"><mat-icon>lock_reset</mat-icon></button>
                 <button class="icon-btn" type="button" (click)="unlock(x)" [disabled]="!x.locked" matTooltip="Unlock" aria-label="Unlock"><mat-icon>lock_open</mat-icon></button>
                 <button class="icon-btn" type="button" (click)="toggle(x)" [disabled]="isSelf(x)"
                         [matTooltip]="x.enabled ? 'Disable' : 'Enable'" [attr.aria-label]="x.enabled ? 'Disable' : 'Enable'">
