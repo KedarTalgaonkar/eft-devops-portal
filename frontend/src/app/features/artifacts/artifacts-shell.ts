@@ -5,8 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-artifacts-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Artifacts" subtitle="Artifactory repositories, storage and published builds"
-                      [logos]="['jfrog', 'docker']" [tabs]="tabs" />
+    <app-module-shell
+      heading="Artifacts"
+      subtitle="Artifactory repositories, storage and published builds"
+      [logos]="['jfrog', 'docker']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class ArtifactsShell {

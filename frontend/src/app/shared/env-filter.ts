@@ -6,9 +6,21 @@ import { Environments } from '../core/environments';
   selector: 'app-env-filter',
   template: `
     <div class="chips" role="group" aria-label="Environment">
-      <button type="button" class="chip-btn" [attr.aria-pressed]="value() === ''" (click)="value.set('')">All</button>
+      <button
+        type="button"
+        class="chip-btn"
+        [attr.aria-pressed]="value() === ''"
+        (click)="value.set('')"
+      >
+        All
+      </button>
       @for (e of envs.active(); track e.code) {
-        <button type="button" class="chip-btn" [attr.aria-pressed]="value() === e.code" (click)="value.set(e.code)">
+        <button
+          type="button"
+          class="chip-btn"
+          [attr.aria-pressed]="value() === e.code"
+          (click)="value.set(e.code)"
+        >
           {{ e.name }}
         </button>
       }
@@ -16,6 +28,6 @@ import { Environments } from '../core/environments';
   `,
 })
 export class EnvFilter {
-  protected readonly envs = inject(Environments);
   readonly value = model('');
+  protected readonly envs = inject(Environments);
 }

@@ -81,5 +81,7 @@ export function tomcatLine(v: string | null): string {
 export function countBy<T>(items: T[], key: (t: T) => string): { label: string; value: number }[] {
   const map = new Map<string, number>();
   items.forEach((i) => map.set(key(i), (map.get(key(i)) ?? 0) + 1));
-  return [...map.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+  return [...map.entries()]
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
 }

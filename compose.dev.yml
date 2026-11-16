@@ -8,12 +8,12 @@ services:
     build: !reset null
     image: maven:3.9-eclipse-temurin-25
     working_dir: /src
-    command: ["mvn", "-B", "-q", "spring-boot:run"]
+    command: [ "mvn", "-B", "-q", "spring-boot:run" ]
     volumes:
       - ./backend:/src
       - m2:/root/.m2
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'" ]
       interval: 10s
       timeout: 3s
       retries: 30
@@ -23,7 +23,7 @@ services:
     build: !reset null
     image: node:24-alpine
     working_dir: /app
-    command: ["sh", "-c", "npm ci && npx ng serve --host 0.0.0.0 --poll 2000 --proxy-config proxy.conf.json"]
+    command: [ "sh", "-c", "npm ci && npx ng serve --host 0.0.0.0 --poll 2000 --proxy-config proxy.conf.json" ]
     volumes:
       - ./frontend:/app
       - /app/node_modules

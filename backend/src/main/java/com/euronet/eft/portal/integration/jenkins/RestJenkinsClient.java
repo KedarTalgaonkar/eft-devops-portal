@@ -7,14 +7,6 @@ import com.euronet.eft.portal.integration.IntegrationStatus;
 import com.euronet.eft.portal.integration.IntegrationsProperties;
 import com.euronet.eft.portal.integration.ToolProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,6 +16,15 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Live Jenkins client using the JSON API:
@@ -35,7 +36,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class RestJenkinsClient implements JenkinsClient {
 
     private static final String TREE =
-            "builds[number,result,timestamp,duration,building,url,displayName,actions[causes[userName,userId]]]";
+        "builds[number,result,timestamp,duration,building,url,displayName,actions[causes[userName,userId]]]";
 
     private final RestClient http;
     private final String baseUrl;
@@ -52,13 +53,42 @@ public class RestJenkinsClient implements JenkinsClient {
         RestClient.Builder builder = RestClient.builder().requestFactory(requestFactory);
         if (jenkins.hasToken()) {
             String basic = Base64.getEncoder().encodeToString(
-                    (jenkins.username() + ":" + jenkins.token()).getBytes(StandardCharsets.UTF_8));
+                (jenkins.username() + ":" + jenkins.token()).getBytes(StandardCharsets.UTF_8));
             builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Basic " + basic);
         }
         this.http = builder.build();
     }
 
-    /** {@code GET /job/<folder>/job/<name>/<number>/consoleText}, streamed; only the tail and error lines are kept. */
+    private static JenkinsBuild toBuild(String job, BuildJson b) {
+        boolean building = Boolean.TRUE.equals(b.building());
+        BuildResult result = BuildResult.fromJenkins(b.result(), building);
+        Instant started = b.timestamp() == null ? null : Instant.ofEpochMilli(b.timestamp());
+        Duration duration = b.duration() == null ? Duration.ZERO : Duration.ofMillis(b.duration());
+        return new JenkinsBuild(job, b.number() == null ? 0 : b.number(), result, started, duration,
+            triggeredBy(b.actions()), b.displayName(), result == BuildResult.SUCCESS, b.url());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String triggeredBy(List<Map<String, Object>> actions) {
+        if (actions == null) {
+            return null;
+        }
+        List<String> names = new ArrayList<>();
+        for (Map<String, Object> action : actions) {
+            if (action != null && action.get("causes") instanceof List<?> causes) {
+                for (Object cause : causes) {
+                    if (cause instanceof Map<?, ?> c && c.get("userName") != null) {
+                        names.add(String.valueOf(c.get("userName")));
+                    }
+                }
+            }
+        }
+        return names.isEmpty() ? "SCM / timer" : names.getFirst();
+    }
+
+    /**
+     * {@code GET /job/<folder>/job/<name>/<number>/consoleText}, streamed; only the tail and error lines are kept.
+     */
     @Override
     public BuildLog log(String job, int number, int maxBytes) {
         URI target = jobUri(job).pathSegment(String.valueOf(number), "consoleText").encode().build().toUri();
@@ -69,7 +99,7 @@ public class RestJenkinsClient implements JenkinsClient {
                 }
                 if (response.getStatusCode().isError()) {
                     throw new IntegrationUnavailableException("Jenkins",
-                            "log of " + job + " #" + number + " returned " + response.getStatusCode(), null);
+                        "log of " + job + " #" + number + " returned " + response.getStatusCode(), null);
                 }
                 return BuildLog.read(response.getBody(), maxBytes);
             });
@@ -92,10 +122,10 @@ public class RestJenkinsClient implements JenkinsClient {
     public List<JenkinsBuild> builds(String job, int limit) {
         UriComponentsBuilder uri = jobUri(job);
         URI target = uri.pathSegment("api", "json")
-                .queryParam("tree", "{tree}")
-                .encode()
-                .buildAndExpand(TREE + "{0," + limit + "}")
-                .toUri();
+            .queryParam("tree", "{tree}")
+            .encode()
+            .buildAndExpand(TREE + "{0," + limit + "}")
+            .toUri();
         try {
             JobJson body = http.get().uri(target).retrieve().body(JobJson.class);
             if (body == null || body.builds() == null) {
@@ -110,33 +140,6 @@ public class RestJenkinsClient implements JenkinsClient {
         } catch (RestClientException e) {
             throw new IntegrationUnavailableException("Jenkins", "job " + job + ": " + e.getMessage(), e);
         }
-    }
-
-    private static JenkinsBuild toBuild(String job, BuildJson b) {
-        boolean building = Boolean.TRUE.equals(b.building());
-        BuildResult result = BuildResult.fromJenkins(b.result(), building);
-        Instant started = b.timestamp() == null ? null : Instant.ofEpochMilli(b.timestamp());
-        Duration duration = b.duration() == null ? Duration.ZERO : Duration.ofMillis(b.duration());
-        return new JenkinsBuild(job, b.number() == null ? 0 : b.number(), result, started, duration,
-                triggeredBy(b.actions()), b.displayName(), result == BuildResult.SUCCESS, b.url());
-    }
-
-    @SuppressWarnings("unchecked")
-    private static String triggeredBy(List<Map<String, Object>> actions) {
-        if (actions == null) {
-            return null;
-        }
-        List<String> names = new ArrayList<>();
-        for (Map<String, Object> action : actions) {
-            if (action != null && action.get("causes") instanceof List<?> causes) {
-                for (Object cause : causes) {
-                    if (cause instanceof Map<?, ?> c && c.get("userName") != null) {
-                        names.add(String.valueOf(c.get("userName")));
-                    }
-                }
-            }
-        }
-        return names.isEmpty() ? "SCM / timer" : names.getFirst();
     }
 
     @Override

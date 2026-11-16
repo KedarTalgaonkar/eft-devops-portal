@@ -5,9 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-inventory-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Application inventory"
-                      subtitle="Applications, clients, owners and every deployment path, from the Tomcat projects workbook"
-                      [logos]="['tomcat', 'java']" [tabs]="tabs" />
+    <app-module-shell
+      heading="Application inventory"
+      subtitle="Applications, clients, owners and every deployment path, from the Tomcat projects workbook"
+      [logos]="['tomcat', 'java']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class InventoryShell {

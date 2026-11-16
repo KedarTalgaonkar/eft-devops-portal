@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 
 /**
@@ -153,7 +154,9 @@ public class Deployment {
         return updatedAt;
     }
 
-    /** Full URL of the deployed context, e.g. http://host:9091/SITCBCQRAPI/ */
+    /**
+     * Full URL of the deployed context, e.g. http://host:9091/SITCBCQRAPI/
+     */
     public String contextUrl() {
         if (baseUrl == null || baseUrl.isBlank()) {
             return null;

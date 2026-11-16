@@ -8,48 +8,38 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 
-/** A message shown in the header of every page between {@code startsAt} and {@code endsAt}. */
+/**
+ * A message shown in the header of every page between {@code startsAt} and {@code endsAt}.
+ */
 @Entity
 @Table(name = "announcement")
 public class Announcement {
 
-    /** Decides the banner colour and whether users may hide it (INCIDENT cannot be hidden). */
-    public enum Kind { INFO, RELEASE, MAINTENANCE, INCIDENT }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Kind kind;
-
     @Column(nullable = false)
     private String message;
-
     @Column(name = "link_url")
     private String linkUrl;
-
     @Column(name = "link_label")
     private String linkLabel;
-
     @Column(name = "starts_at", nullable = false)
     private Instant startsAt;
-
     @Column(name = "ends_at", nullable = false)
     private Instant endsAt;
-
     @Column(name = "created_by", nullable = false)
     private String createdBy;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
     @Column(name = "updated_by")
     private String updatedBy;
-
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -124,4 +114,9 @@ public class Announcement {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
+
+    /**
+     * Decides the banner colour and whether users may hide it (INCIDENT cannot be hidden).
+     */
+    public enum Kind {INFO, RELEASE, MAINTENANCE, INCIDENT}
 }

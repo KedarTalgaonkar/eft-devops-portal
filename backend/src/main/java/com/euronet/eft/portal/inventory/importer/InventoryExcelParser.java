@@ -1,6 +1,15 @@
 package com.euronet.eft.portal.inventory.importer;
 
 import com.euronet.eft.portal.common.EnvironmentCodes;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,14 +21,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.springframework.stereotype.Component;
 
 /**
  * Reads the "Jenkins Automation - Tomcat Based Projects" workbook layout:
@@ -41,6 +42,96 @@ public class InventoryExcelParser {
 
     private static final int HEADER_SEARCH_ROWS = 10;
     private static final DataFormatter FORMATTER = new DataFormatter(Locale.ROOT);
+
+    private static Optional<String> fixedColumn(String header) {
+        return switch (header) {
+            case "application name", "application", "app name" -> Optional.of("app");
+            case "client name", "client", "bank" -> Optional.of("client");
+            case "owner", "owner name", "team owner" -> Optional.of("owner");
+            case "repository", "repositories", "repo", "github repository", "github repo", "git repository" ->
+                Optional.of("repo");
+            default -> Optional.empty();
+        };
+    }
+
+    private static String fieldKey(String header) {
+        if (header.isEmpty()) {
+            return null;
+        }
+        if (header.equals("url")) {
+            return "url";
+        }
+        if (header.startsWith("context")) {
+            return "context";
+        }
+        if (header.startsWith("tomcat version")) {
+            return "tomcat";
+        }
+        if (header.startsWith("java")) {
+            return "java";
+        }
+        if (header.contains("admin")) {
+            return "admin";
+        }
+        if (header.replace(".", "").replace(" ", "").startsWith("buildxml")) {
+            return "buildxml";
+        }
+        return null;
+    }
+
+    private static String column(Row row, Map<String, Integer> fixed, String key, FormulaEvaluator ev) {
+        Integer col = fixed.get(key);
+        return col == null ? "" : text(row.getCell(col), ev);
+    }
+
+    private static String value(Row row, Map<String, Integer> cols, String key, FormulaEvaluator ev) {
+        Integer col = cols.get(key);
+        return col == null ? "" : text(row.getCell(col), ev);
+    }
+
+    private static boolean containsText(Row row, String wanted, FormulaEvaluator ev) {
+        for (Cell cell : row) {
+            if (norm(text(cell, ev)).equals(wanted)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static String text(Cell cell, FormulaEvaluator ev) {
+        if (cell == null) {
+            return "";
+        }
+        return FORMATTER.formatCellValue(cell, ev).replace(' ', ' ').strip();
+    }
+
+    private static String norm(String s) {
+        return s.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").strip();
+    }
+
+    private static List<String> splitList(String s) {
+        if (s.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(s.split("[,;\\n]")).map(String::strip).filter(v -> !v.isEmpty()).distinct().toList();
+    }
+
+    private static boolean isDone(String s) {
+        String v = norm(s);
+        return v.equals("done") || v.equals("yes") || v.equals("y") || v.equals("true");
+    }
+
+    private static String trimUrl(String url) {
+        String u = url.strip();
+        while (u.endsWith("/")) {
+            u = u.substring(0, u.length() - 1);
+        }
+        return u;
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s;
+    }
 
     public InventoryWorkbook parse(InputStream in) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(in)) {
@@ -152,103 +243,14 @@ public class InventoryExcelParser {
                     continue; // e.g. ACS 2.0 has a UAT block only
                 }
                 out.add(new ParsedDeployment(
-                        owner.isEmpty() ? sheetName : owner, app, client, group.getKey(), context, blankToNull(url),
-                        blankToNull(value(row, c, "tomcat", ev)),
-                        JavaVersions.normalize(value(row, c, "java", ev)),
-                        isDone(value(row, c, "admin", ev)),
-                        isDone(value(row, c, "buildxml", ev)),
-                        repos));
+                    owner.isEmpty() ? sheetName : owner, app, client, group.getKey(), context, blankToNull(url),
+                    blankToNull(value(row, c, "tomcat", ev)),
+                    JavaVersions.normalize(value(row, c, "java", ev)),
+                    isDone(value(row, c, "admin", ev)),
+                    isDone(value(row, c, "buildxml", ev)),
+                    repos));
             }
         }
         return true;
-    }
-
-    private static Optional<String> fixedColumn(String header) {
-        return switch (header) {
-            case "application name", "application", "app name" -> Optional.of("app");
-            case "client name", "client", "bank" -> Optional.of("client");
-            case "owner", "owner name", "team owner" -> Optional.of("owner");
-            case "repository", "repositories", "repo", "github repository", "github repo", "git repository" -> Optional.of("repo");
-            default -> Optional.empty();
-        };
-    }
-
-    private static String fieldKey(String header) {
-        if (header.isEmpty()) {
-            return null;
-        }
-        if (header.equals("url")) {
-            return "url";
-        }
-        if (header.startsWith("context")) {
-            return "context";
-        }
-        if (header.startsWith("tomcat version")) {
-            return "tomcat";
-        }
-        if (header.startsWith("java")) {
-            return "java";
-        }
-        if (header.contains("admin")) {
-            return "admin";
-        }
-        if (header.replace(".", "").replace(" ", "").startsWith("buildxml")) {
-            return "buildxml";
-        }
-        return null;
-    }
-
-    private static String column(Row row, Map<String, Integer> fixed, String key, FormulaEvaluator ev) {
-        Integer col = fixed.get(key);
-        return col == null ? "" : text(row.getCell(col), ev);
-    }
-
-    private static String value(Row row, Map<String, Integer> cols, String key, FormulaEvaluator ev) {
-        Integer col = cols.get(key);
-        return col == null ? "" : text(row.getCell(col), ev);
-    }
-
-    private static boolean containsText(Row row, String wanted, FormulaEvaluator ev) {
-        for (Cell cell : row) {
-            if (norm(text(cell, ev)).equals(wanted)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static String text(Cell cell, FormulaEvaluator ev) {
-        if (cell == null) {
-            return "";
-        }
-        return FORMATTER.formatCellValue(cell, ev).replace(' ', ' ').strip();
-    }
-
-    private static String norm(String s) {
-        return s.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").strip();
-    }
-
-    private static List<String> splitList(String s) {
-        if (s.isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(s.split("[,;\\n]")).map(String::strip).filter(v -> !v.isEmpty()).distinct().toList();
-    }
-
-    private static boolean isDone(String s) {
-        String v = norm(s);
-        return v.equals("done") || v.equals("yes") || v.equals("y") || v.equals("true");
-    }
-
-    private static String trimUrl(String url) {
-        String u = url.strip();
-        while (u.endsWith("/")) {
-            u = u.substring(0, u.length() - 1);
-        }
-        return u;
-    }
-
-    private static String blankToNull(String s) {
-        return s == null || s.isBlank() ? null : s;
     }
 }

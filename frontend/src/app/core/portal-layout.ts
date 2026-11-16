@@ -16,7 +16,16 @@ import { NAV_GROUPS } from './navigation';
  */
 @Component({
   selector: 'app-portal-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, MatTooltipModule, BrandMark, ToolLogo, AnnouncementBar],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatIconModule,
+    MatTooltipModule,
+    BrandMark,
+    ToolLogo,
+    AnnouncementBar,
+  ],
   templateUrl: './portal-layout.html',
   styleUrl: './portal-layout.scss',
 })
@@ -24,19 +33,35 @@ export class PortalLayout {
   protected readonly auth = inject(Auth);
   protected readonly navOpen = signal(false);
 
-  protected readonly groups = computed(() => NAV_GROUPS.filter((g) => !g.requires || this.auth.can(g.requires)));
+  protected readonly groups = computed(() =>
+    NAV_GROUPS.filter((g) => !g.requires || this.auth.can(g.requires)),
+  );
   protected readonly initials = computed(() => {
     const name = this.auth.user()?.displayName ?? '';
-    return name.split(/[\s.@_-]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('') || '?';
+    return (
+      name
+        .split(/[\s.@_-]+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0].toUpperCase())
+        .join('') || '?'
+    );
   });
   protected readonly topRole = computed(() => {
     const roles = this.auth.user()?.roles ?? [];
-    return roles.includes('ADMIN') ? 'Administrator' : roles.includes('EDITOR') ? 'Editor' : 'Viewer';
+    return roles.includes('ADMIN')
+      ? 'Administrator'
+      : roles.includes('EDITOR')
+        ? 'Editor'
+        : 'Viewer';
   });
 
   constructor() {
     inject(Router)
-      .events.pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
+      .events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
       .subscribe(() => this.navOpen.set(false));
   }
 

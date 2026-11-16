@@ -18,4 +18,9 @@ export interface QualityProject {
   url: string;
 }
 
-export const GATE_LABEL: Record<GateStatus, string> = { OK: 'Passed', WARN: 'Warning', ERROR: 'Failed', NONE: 'Not computed' };
+export const GATE_LABEL: Record<GateStatus, string> = {
+  OK: 'Passed',
+  WARN: 'Warning',
+  ERROR: 'Failed',
+  NONE: 'Not computed',
+};

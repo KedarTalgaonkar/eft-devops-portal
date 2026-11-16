@@ -5,31 +5,32 @@ Phase 1: **build failure explainer** and **executive digest**. Both use Claude t
 
 ## Modes
 
-| `AI_MODE` | What happens | When |
-|---|---|---|
-| `off` (application default) | No AI anywhere; buttons and the digest card are hidden | Production until the provider is approved |
-| `mock` (default in `docker-compose.yml`) | Built-in sample answers from keyword rules and templates; **nothing leaves the portal** | Demos, development, tests |
-| `live` | Claude via the provider in `AI_PROVIDER` | After approval |
+| `AI_MODE`                                | What happens                                                                            | When                                      |
+|------------------------------------------|-----------------------------------------------------------------------------------------|-------------------------------------------|
+| `off` (application default)              | No AI anywhere; buttons and the digest card are hidden                                  | Production until the provider is approved |
+| `mock` (default in `docker-compose.yml`) | Built-in sample answers from keyword rules and templates; **nothing leaves the portal** | Demos, development, tests                 |
+| `live`                                   | Claude via the provider in `AI_PROVIDER`                                                | After approval                            |
 
 Switching to live needs only environment variables; then `docker compose up -d backend`:
 
-| `AI_PROVIDER` | Also set |
-|---|---|
-| `anthropic` | `ANTHROPIC_API_KEY` |
-| `bedrock` | `AWS_REGION` and `AWS_BEARER_TOKEN_BEDROCK` (or AWS credentials / an IAM role). The model id gets the `anthropic.` prefix automatically |
-| `foundry` | `ANTHROPIC_FOUNDRY_API_KEY` and `ANTHROPIC_FOUNDRY_RESOURCE` |
+| `AI_PROVIDER` | Also set                                                                                                                                |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `anthropic`   | `ANTHROPIC_API_KEY`                                                                                                                     |
+| `bedrock`     | `AWS_REGION` and `AWS_BEARER_TOKEN_BEDROCK` (or AWS credentials / an IAM role). The model id gets the `anthropic.` prefix automatically |
+| `foundry`     | `ANTHROPIC_FOUNDRY_API_KEY` and `ANTHROPIC_FOUNDRY_RESOURCE`                                                                            |
 
 `AI_MODEL` defaults to `claude-opus-5-5`. Behind the corporate TLS proxy, put the corporate CA into `backend/certs/`
 (see `backend/certs/README.md`) so the backend trusts the provider's certificate.
 
 ## What is sent, and what is not
 
-| Feature | Sent to the model | Never sent |
-|---|---|---|
+| Feature                 | Sent to the model                                                                                                                                                                 | Never sent                               |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
 | Build failure explainer | Project, client, environment, Jenkins job, build number/result/duration; the **last 64 KB** of the console log (`AI_MAX_LOG_KB`) and up to 80 error lines from earlier in the log | Anything else from Jenkins; the full log |
-| Executive digest | The aggregated figures the Command centre already shows: RAG per area, delivery KPIs (current vs previous 30 days), estate counts, the top 12 issues with owners | Logs, source code, credentials |
+| Executive digest        | The aggregated figures the Command centre already shows: RAG per area, delivery KPIs (current vs previous 30 days), estate counts, the top 12 issues with owners                  | Logs, source code, credentials           |
 
 **Masking before every call** (`Redactor`):
+
 * Secrets become `[SECRET]` and are never restored: `password=`/`token:`/`apiKey=`/`client_secret` style values,
   `--password x` flags, `Authorization:` headers, credentials in URLs, JWTs, GitHub/AWS/Artifactory/Slack/Anthropic
   token formats, private-key blocks.
@@ -73,16 +74,16 @@ it. In mock mode a sample digest is written at start-up when none exists.
 
 ## Code map
 
-| Piece | Where |
-|---|---|
-| Gateway (limits, masking, call, restore, ledger, audit) | `ai/AiGateway.java` |
-| Claude client (Anthropic / Bedrock / Foundry) | `ai/ClaudeModel.java` |
-| Masking | `ai/Redactor.java` |
-| Build explainer, prompt, mock rules | `ai/builds/` and `integration/jenkins/BuildLog.java` |
-| Digest, prompt, facts, mock writer, schedule | `ai/digest/` |
-| Stored answers and feedback | `ai/insight/`, tables `ai_insight`, `ai_feedback` (Flyway V5) |
-| Usage ledger and admin view | `ai/usage/`, `ai/AiAdminController.java`, table `ai_usage` |
-| UI | `core/ai.ts`, `shared/ai-meta.ts`, `features/pipelines/build-explanation.ts`, `features/dashboard/digest-card.ts`, `features/admin/admin-ai.ts` |
+| Piece                                                   | Where                                                                                                                                           |
+|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Gateway (limits, masking, call, restore, ledger, audit) | `ai/AiGateway.java`                                                                                                                             |
+| Claude client (Anthropic / Bedrock / Foundry)           | `ai/ClaudeModel.java`                                                                                                                           |
+| Masking                                                 | `ai/Redactor.java`                                                                                                                              |
+| Build explainer, prompt, mock rules                     | `ai/builds/` and `integration/jenkins/BuildLog.java`                                                                                            |
+| Digest, prompt, facts, mock writer, schedule            | `ai/digest/`                                                                                                                                    |
+| Stored answers and feedback                             | `ai/insight/`, tables `ai_insight`, `ai_feedback` (Flyway V5)                                                                                   |
+| Usage ledger and admin view                             | `ai/usage/`, `ai/AiAdminController.java`, table `ai_usage`                                                                                      |
+| UI                                                      | `core/ai.ts`, `shared/ai-meta.ts`, `features/pipelines/build-explanation.ts`, `features/dashboard/digest-card.ts`, `features/admin/admin-ai.ts` |
 
 Adding a feature: write a result record (its JSON schema is the contract), a system prompt, a mock function, and call
 `AiGateway.run(new AiTask<>(...))`; store with `AiInsightService.save` if the answer should be reused.

@@ -1,12 +1,13 @@
 package com.euronet.eft.portal.inventory.importer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class InventoryExcelParserTest {
 
@@ -15,6 +16,14 @@ class InventoryExcelParserTest {
     @BeforeAll
     static void parse() throws IOException {
         result = new InventoryExcelParser().parse(new ByteArrayInputStream(InventoryWorkbookFixture.twoOwners()));
+    }
+
+    private static ParsedDeployment find(String app, String env) {
+        List<ParsedDeployment> matches = result.deployments().stream()
+            .filter(d -> d.application().equals(app) && d.environment().equals(env))
+            .toList();
+        assertThat(matches).hasSize(1);
+        return matches.getFirst();
     }
 
     @Test
@@ -28,17 +37,17 @@ class InventoryExcelParserTest {
         // QR ENGINE: SIT + UAT, IMPS Portal: SIT + UAT, ACS 2.0: UAT only
         assertThat(result.deployments()).hasSize(5);
         assertThat(result.deployments())
-                .filteredOn(d -> d.application().equals("ACS 2.0"))
-                .extracting(ParsedDeployment::environment)
-                .containsExactly("UAT");
+            .filteredOn(d -> d.application().equals("ACS 2.0"))
+            .extracting(ParsedDeployment::environment)
+            .containsExactly("UAT");
     }
 
     @Test
     void ownerComesFromSheetName() {
         assertThat(result.deployments())
-                .filteredOn(d -> d.application().equals("QR ENGINE"))
-                .extracting(ParsedDeployment::owner)
-                .containsOnly("Samar");
+            .filteredOn(d -> d.application().equals("QR ENGINE"))
+            .extracting(ParsedDeployment::owner)
+            .containsOnly("Samar");
     }
 
     @Test
@@ -61,13 +70,5 @@ class InventoryExcelParserTest {
         assertThat(uatImps.tomcatVersion()).isEqualTo("9.0.67");
         assertThat(uatImps.javaVersion()).isEqualTo("8u311");
         assertThat(uatImps.buildXmlDone()).isFalse();            // "Pending"
-    }
-
-    private static ParsedDeployment find(String app, String env) {
-        List<ParsedDeployment> matches = result.deployments().stream()
-                .filter(d -> d.application().equals(app) && d.environment().equals(env))
-                .toList();
-        assertThat(matches).hasSize(1);
-        return matches.getFirst();
     }
 }

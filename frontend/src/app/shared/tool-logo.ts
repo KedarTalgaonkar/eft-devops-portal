@@ -11,7 +11,7 @@ import {
   siPrometheus,
   siRedhatopenshift,
   siSonarqubeserver,
-  siSpringboot,
+  siSpringboot
 } from 'simple-icons';
 
 /** Brand marks of the tools the portal integrates with (simple-icons, CC0), bundled locally: no external requests. */
@@ -37,15 +37,33 @@ export type ToolName = keyof typeof LOGOS;
   selector: 'app-tool-logo',
   template: `
     <span class="logo" [class.tile]="tile()" [style.width.px]="size()" [style.height.px]="size()">
-      <svg viewBox="0 0 24 24" role="img" [attr.aria-label]="icon().title" [style.width.px]="inner()" [style.height.px]="inner()">
+      <svg
+        viewBox="0 0 24 24"
+        role="img"
+        [attr.aria-label]="icon().title"
+        [style.width.px]="inner()"
+        [style.height.px]="inner()"
+      >
         <path [attr.d]="icon().path" [attr.fill]="color()" />
       </svg>
     </span>
   `,
   styles: `
-    :host { display: inline-flex; }
-    .logo { display: inline-flex; align-items: center; justify-content: center; flex: none; }
-    .tile { background: #fff; border: 1px solid var(--app-line); border-radius: 10px; box-shadow: var(--shadow); }
+    :host {
+      display: inline-flex;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+    .tile {
+      background: #fff;
+      border: 1px solid var(--app-line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
   `,
 })
 export class ToolLogo {

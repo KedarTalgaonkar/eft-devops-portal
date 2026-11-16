@@ -2,7 +2,9 @@ package com.euronet.eft.portal.integration.jenkins;
 
 import java.util.Locale;
 
-/** Jenkins build results, plus IN_PROGRESS for a build that has not finished yet. */
+/**
+ * Jenkins build results, plus IN_PROGRESS for a build that has not finished yet.
+ */
 public enum BuildResult {
     SUCCESS, FAILURE, ABORTED, UNSTABLE, NOT_BUILT, IN_PROGRESS;
 

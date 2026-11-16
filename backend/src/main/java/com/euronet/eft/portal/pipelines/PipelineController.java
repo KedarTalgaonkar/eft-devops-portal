@@ -1,20 +1,23 @@
 package com.euronet.eft.portal.pipelines;
 
+import com.euronet.eft.portal.common.EnvironmentCodes;
 import com.euronet.eft.portal.pipelines.PipelineDtos.BuildView;
 import com.euronet.eft.portal.pipelines.PipelineDtos.DeploymentHistoryEntry;
 import com.euronet.eft.portal.pipelines.PipelineDtos.PipelineMetric;
 import com.euronet.eft.portal.pipelines.PipelineDtos.PipelineTotals;
-import com.euronet.eft.portal.common.EnvironmentCodes;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** {@code env} is any environment code from /api/environments (DEVELOP, SIT, UAT, PERF, PROD, ...); omit it for all. */
+import java.util.List;
+
+/**
+ * {@code env} is any environment code from /api/environments (DEVELOP, SIT, UAT, PERF, PROD, ...); omit it for all.
+ */
 @RestController
 @RequestMapping("/api/pipelines")
 @Tag(name = "Pipelines (Jenkins)", description = "Build counts, trends, KPIs and deployment history per project and environment")
@@ -28,7 +31,9 @@ public class PipelineController {
         this.insights = insights;
     }
 
-    /** Normalises the optional env parameter ("sit" -> SIT); rejects values that cannot be an environment code. */
+    /**
+     * Normalises the optional env parameter ("sit" -> SIT); rejects values that cannot be an environment code.
+     */
     private static String env(String raw) {
         return raw == null || raw.isBlank() ? null : EnvironmentCodes.require(raw);
     }

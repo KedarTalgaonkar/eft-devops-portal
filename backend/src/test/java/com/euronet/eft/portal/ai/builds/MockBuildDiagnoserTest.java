@@ -1,16 +1,19 @@
 package com.euronet.eft.portal.ai.builds;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.euronet.eft.portal.ai.Redactor;
 import com.euronet.eft.portal.ai.builds.BuildDiagnosis.Category;
 import com.euronet.eft.portal.integration.jenkins.MockJenkinsClient;
+import org.junit.jupiter.api.Test;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
 
-/** The mock pipeline: sample Jenkins log -> masking -> rule-based diagnosis covers every sample scenario. */
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The mock pipeline: sample Jenkins log -> masking -> rule-based diagnosis covers every sample scenario.
+ */
 class MockBuildDiagnoserTest {
 
     @Test
@@ -30,7 +33,7 @@ class MockBuildDiagnoserTest {
             seen.add(d.category());
         }
         assertThat(seen).containsExactlyInAnyOrder(Category.COMPILE, Category.TEST, Category.DEPENDENCY, Category.DEPLOYMENT,
-                Category.QUALITY_GATE, Category.TIMEOUT, Category.INFRASTRUCTURE);
+            Category.QUALITY_GATE, Category.TIMEOUT, Category.INFRASTRUCTURE);
     }
 
     @Test

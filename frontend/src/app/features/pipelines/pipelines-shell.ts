@@ -7,13 +7,22 @@ import { PipelineFilters } from './pipeline-filters';
   selector: 'app-pipelines-shell',
   imports: [ModuleShell, EnvFilter],
   template: `
-    <app-module-shell heading="Delivery pipelines" subtitle="Jenkins builds and deployments per project, for every environment"
-                      [logos]="['jenkins', 'tomcat']" [tabs]="tabs">
+    <app-module-shell
+      heading="Delivery pipelines"
+      subtitle="Jenkins builds and deployments per project, for every environment"
+      [logos]="['jenkins', 'tomcat']"
+      [tabs]="tabs"
+    >
       <div class="filters">
         <app-env-filter [(value)]="filters.env" />
         <span class="spacer"></span>
         <label class="muted" for="period">Period</label>
-        <select id="period" class="select" [value]="filters.days()" (change)="filters.days.set(+$any($event.target).value)">
+        <select
+          id="period"
+          class="select"
+          [value]="filters.days()"
+          (change)="filters.days.set(+$any($event.target).value)"
+        >
           @for (d of filters.dayOptions; track d) {
             <option [value]="d" [selected]="d === filters.days()">Last {{ d }} days</option>
           }

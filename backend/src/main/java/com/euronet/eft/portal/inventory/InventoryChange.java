@@ -6,52 +6,38 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 
-/** One recorded inventory change: an owner move, a new deployment path, a URL or version change, a portal edit. */
+/**
+ * One recorded inventory change: an owner move, a new deployment path, a URL or version change, a portal edit.
+ */
 @Entity
 @Table(name = "inventory_change")
 public class InventoryChange {
 
-    public enum Type { APPLICATION_ADDED, DEPLOYMENT_ADDED, FIELD_CHANGED }
-
-    public enum Source { IMPORT, PORTAL }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(name = "application_id")
     private Long applicationId;
-
     @Column(name = "deployment_id")
     private Long deploymentId;
-
     @Column(name = "change_type", nullable = false)
     private String changeType;
-
     private String field;
-
     @Column(name = "old_value")
     private String oldValue;
-
     @Column(name = "new_value")
     private String newValue;
-
     @Column(nullable = false)
     private String source;
-
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
-
     @Column(name = "changed_by")
     private String changedBy;
 
     protected InventoryChange() {
-    }
-
-    public String getChangedBy() {
-        return changedBy;
     }
 
     public InventoryChange(Long applicationId, Long deploymentId, Type type, String field, String oldValue,
@@ -69,6 +55,10 @@ public class InventoryChange {
 
     private static String truncate(String v) {
         return v == null || v.length() <= 500 ? v : v.substring(0, 500);
+    }
+
+    public String getChangedBy() {
+        return changedBy;
     }
 
     public Long getId() {
@@ -106,4 +96,8 @@ public class InventoryChange {
     public Instant getChangedAt() {
         return changedAt;
     }
+
+    public enum Type {APPLICATION_ADDED, DEPLOYMENT_ADDED, FIELD_CHANGED}
+
+    public enum Source {IMPORT, PORTAL}
 }

@@ -10,7 +10,7 @@ import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { BuildsDialog } from './builds-dialog';
 import { PipelineFilters } from './pipeline-filters';
-import { SortKey, SortState, filterAndSort, totals } from './pipeline-table';
+import { filterAndSort, SortKey, SortState, totals } from './pipeline-table';
 import { PipelineMetric } from './pipelines.models';
 
 /** Support view: the "EFT Pipeline Metrics" table for every project × environment, with drill-down. */
@@ -20,34 +20,35 @@ import { PipelineMetric } from './pipelines.models';
   templateUrl: './pipelines-all.html',
 })
 export class PipelinesAllPage {
-  private readonly dialog = inject(MatDialog);
-  protected readonly filters = inject(PipelineFilters);
-  protected readonly envs = inject(Environments);
-
   /** ?q= deep link from the overview / command centre. */
   readonly q = input<string>();
-  protected readonly search = linkedSignal(() => this.q() ?? '');
   /** ?failing=1 deep link: only pipelines with failures. */
   readonly failing = input<string>();
-  protected readonly onlyFailing = linkedSignal(() => !!this.failing() && !['0', 'false', 'now'].includes(this.failing()!));
+  protected readonly filters = inject(PipelineFilters);
+  protected readonly envs = inject(Environments);
+  protected readonly search = linkedSignal(() => this.q() ?? '');
+  protected readonly onlyFailing = linkedSignal(
+    () => !!this.failing() && !['0', 'false', 'now'].includes(this.failing()!),
+  );
   /** ?failing=now: only pipelines whose latest build failed (the "failing now" KPI). */
   protected readonly failingNow = linkedSignal(() => this.failing() === 'now');
   protected readonly sort = signal<SortState>({ key: 'project', dir: 1 });
-
   protected readonly metrics = httpResource<PipelineMetric[]>(() =>
     apiUrl('pipelines/metrics', { env: this.filters.env(), days: this.filters.days() }),
   );
-
   protected readonly rows = computed(() => {
     if (!this.metrics.hasValue()) {
       return [];
     }
     const list = filterAndSort(this.metrics.value(), this.search(), this.sort(), this.envs.codes());
     const now = this.failingNow() ? list.filter((r) => r.lastBuild?.result === 'FAILURE') : list;
-    return this.onlyFailing() ? now.filter((r) => r.failed > 0 || r.lastBuild?.result === 'FAILURE' || r.error) : now;
+    return this.onlyFailing()
+      ? now.filter((r) => r.failed > 0 || r.lastBuild?.result === 'FAILURE' || r.error)
+      : now;
   });
   protected readonly totals = computed(() => totals(this.rows()));
   protected readonly failingCount = computed(() => this.rows().filter((r) => r.failed > 0).length);
+  private readonly dialog = inject(MatDialog);
 
   /** Share of finished builds, rounded. */
   protected pct(n: number): number {
@@ -59,7 +60,11 @@ export class PipelinesAllPage {
   protected sortBy(key: SortKey): void {
     const current = this.sort();
     const numeric = key !== 'project' && key !== 'environment';
-    this.sort.set(current.key === key ? { key, dir: current.dir === 1 ? -1 : 1 } : { key, dir: numeric ? -1 : 1 });
+    this.sort.set(
+      current.key === key
+        ? { key, dir: current.dir === 1 ? -1 : 1 }
+        : { key, dir: numeric ? -1 : 1 },
+    );
   }
 
   protected sortMark(key: SortKey): string {

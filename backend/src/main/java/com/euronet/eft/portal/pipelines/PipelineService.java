@@ -13,6 +13,10 @@ import com.euronet.eft.portal.pipelines.PipelineDtos.BuildView;
 import com.euronet.eft.portal.pipelines.PipelineDtos.DeploymentHistoryEntry;
 import com.euronet.eft.portal.pipelines.PipelineDtos.PipelineMetric;
 import com.euronet.eft.portal.pipelines.PipelineDtos.PipelineTotals;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,9 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 /**
  * Joins the inventory (which projects exist in which environment) with Jenkins build history.
@@ -34,9 +35,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class PipelineService {
 
-    private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
     static final int MAX_DAYS = 365;
-
+    private static final Logger log = LoggerFactory.getLogger(PipelineService.class);
     private final InventoryService inventory;
     private final JenkinsBuildCache builds;
     private final JenkinsJobNaming naming;
@@ -50,7 +50,23 @@ public class PipelineService {
         this.environments = environments;
     }
 
-    /** One row per project and environment, counting builds started in the last {@code days} days. */
+    private static PipelineMetric row(Pipeline p, BuildStats s, BuildView last, String error) {
+        Application a = p.app();
+        return new PipelineMetric(a.getId(), a.getName(), a.getClient(), a.getOwner(), p.environment(), p.job(),
+            s.total(), s.success(), s.failed(), s.aborted(), s.unstable(), s.inProgress(), s.successRate(), last, error);
+    }
+
+    private static Instant since(int days) {
+        return Instant.now().minus(Duration.ofDays(clampDays(days)));
+    }
+
+    static int clampDays(int days) {
+        return Math.clamp(days, 1, MAX_DAYS);
+    }
+
+    /**
+     * One row per project and environment, counting builds started in the last {@code days} days.
+     */
     public List<PipelineMetric> metrics(String environment, int days) {
         Instant since = since(days);
         List<PipelineMetric> rows = new ArrayList<>();
@@ -71,20 +87,18 @@ public class PipelineService {
     public PipelineTotals totals(String environment, int days) {
         List<PipelineMetric> rows = metrics(environment, days);
         BuildStats sum = rows.stream()
-                .map(r -> new BuildStats(r.totalBuilds(), r.success(), r.failed(), r.aborted(), r.unstable(), r.inProgress()))
-                .reduce(BuildStats.EMPTY, BuildStats::plus);
+            .map(r -> new BuildStats(r.totalBuilds(), r.success(), r.failed(), r.aborted(), r.unstable(), r.inProgress()))
+            .reduce(BuildStats.EMPTY, BuildStats::plus);
         return new PipelineTotals(rows.size(), sum.total(), sum.success(), sum.failed(), sum.aborted(),
-                sum.unstable(), sum.inProgress(), sum.successRate(), clampDays(days));
+            sum.unstable(), sum.inProgress(), sum.successRate(), clampDays(days));
     }
 
-    /** Latest builds (any age) of one project in one environment. */
+    /**
+     * Latest builds (any age) of one project in one environment.
+     */
     public List<BuildView> builds(long applicationId, String environment, int limit) {
         Pipeline p = pipeline(applicationId, environment);
         return builds.builds(p.job()).stream().limit(Math.max(1, limit)).map(BuildView::of).toList();
-    }
-
-    /** Identifies one pipeline (application + environment) and its Jenkins job; used by the AI build explainer. */
-    public record PipelineRef(long applicationId, String project, String client, String owner, String environment, String job) {
     }
 
     public PipelineRef ref(long applicationId, String environment) {
@@ -93,25 +107,29 @@ public class PipelineService {
         return new PipelineRef(a.getId(), a.getName(), a.getClient(), a.getOwner(), p.environment(), p.job());
     }
 
-    /** One build of a pipeline, from the cached build list. */
+    /**
+     * One build of a pipeline, from the cached build list.
+     */
     public BuildView build(long applicationId, String environment, int number) {
         Pipeline p = pipeline(applicationId, environment);
         return builds.builds(p.job()).stream()
-                .filter(b -> b.number() == number)
-                .findFirst()
-                .map(BuildView::of)
-                .orElseThrow(() -> new NotFoundException("Build", p.job() + " #" + number));
+            .filter(b -> b.number() == number)
+            .findFirst()
+            .map(BuildView::of)
+            .orElseThrow(() -> new NotFoundException("Build", p.job() + " #" + number));
     }
 
     private Pipeline pipeline(long applicationId, String environment) {
         String env = EnvironmentCodes.require(environment);
         return pipelines(env).stream()
-                .filter(x -> x.app().getId() == applicationId)
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Pipeline", applicationId + "/" + env));
+            .filter(x -> x.app().getId() == applicationId)
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Pipeline", applicationId + "/" + env));
     }
 
-    /** Successful deployments across projects, newest first. */
+    /**
+     * Successful deployments across projects, newest first.
+     */
     public List<DeploymentHistoryEntry> deploymentHistory(String environment, int days, int limit) {
         Instant since = since(days);
         List<DeploymentHistoryEntry> entries = new ArrayList<>();
@@ -120,8 +138,8 @@ public class PipelineService {
                 for (JenkinsBuild b : recent(p.job(), since)) {
                     if (b.deployment()) {
                         entries.add(new DeploymentHistoryEntry(p.app().getId(), p.app().getName(), p.app().getClient(),
-                                p.environment(), p.job(), b.number(), b.version(), b.result(), b.startedAt(),
-                                b.triggeredBy(), b.url()));
+                            p.environment(), p.job(), b.number(), b.version(), b.result(), b.startedAt(),
+                            b.triggeredBy(), b.url()));
                     }
                 }
             } catch (RuntimeException e) {
@@ -129,18 +147,20 @@ public class PipelineService {
             }
         }
         return entries.stream()
-                .sorted(Comparator.comparing(DeploymentHistoryEntry::deployedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(Math.max(1, limit))
-                .toList();
+            .sorted(Comparator.comparing(DeploymentHistoryEntry::deployedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+            .limit(Math.max(1, limit))
+            .toList();
     }
 
     private List<JenkinsBuild> recent(String job, Instant since) {
         return builds.builds(job).stream()
-                .filter(b -> b.startedAt() != null && !b.startedAt().isBefore(since))
-                .toList();
+            .filter(b -> b.startedAt() != null && !b.startedAt().isBefore(since))
+            .toList();
     }
 
-    /** Groups deployments by application + environment and resolves each group's Jenkins job. */
+    /**
+     * Groups deployments by application + environment and resolves each group's Jenkins job.
+     */
     List<Pipeline> pipelines(String environment) {
         String env = environment == null || environment.isBlank() ? null : EnvironmentCodes.require(environment);
         Map<String, List<Deployment>> groups = new LinkedHashMap<>();
@@ -153,34 +173,27 @@ public class PipelineService {
         }
         Comparator<String> envOrder = environments.order();
         return groups.values().stream()
-                .map(ds -> {
-                    Deployment first = ds.getFirst();
-                    String job = ds.stream()
-                            .map(Deployment::getJenkinsJob)
-                            .filter(Objects::nonNull)
-                            .filter(j -> !j.isBlank())
-                            .findFirst()
-                            .orElseGet(() -> naming.fromPattern(first.getApplication(), first.getEnvironment(), sharedNames));
-                    return new Pipeline(first.getApplication(), first.getEnvironment(), job.strip());
-                })
-                .sorted(Comparator.comparing((Pipeline p) -> p.app().getName().toLowerCase(Locale.ROOT))
-                        .thenComparing(p -> p.app().getClient().toLowerCase(Locale.ROOT))
-                        .thenComparing(Pipeline::environment, envOrder))
-                .toList();
+            .map(ds -> {
+                Deployment first = ds.getFirst();
+                String job = ds.stream()
+                    .map(Deployment::getJenkinsJob)
+                    .filter(Objects::nonNull)
+                    .filter(j -> !j.isBlank())
+                    .findFirst()
+                    .orElseGet(() -> naming.fromPattern(first.getApplication(), first.getEnvironment(), sharedNames));
+                return new Pipeline(first.getApplication(), first.getEnvironment(), job.strip());
+            })
+            .sorted(Comparator.comparing((Pipeline p) -> p.app().getName().toLowerCase(Locale.ROOT))
+                .thenComparing(p -> p.app().getClient().toLowerCase(Locale.ROOT))
+                .thenComparing(Pipeline::environment, envOrder))
+            .toList();
     }
 
-    private static PipelineMetric row(Pipeline p, BuildStats s, BuildView last, String error) {
-        Application a = p.app();
-        return new PipelineMetric(a.getId(), a.getName(), a.getClient(), a.getOwner(), p.environment(), p.job(),
-                s.total(), s.success(), s.failed(), s.aborted(), s.unstable(), s.inProgress(), s.successRate(), last, error);
-    }
-
-    private static Instant since(int days) {
-        return Instant.now().minus(Duration.ofDays(clampDays(days)));
-    }
-
-    static int clampDays(int days) {
-        return Math.clamp(days, 1, MAX_DAYS);
+    /**
+     * Identifies one pipeline (application + environment) and its Jenkins job; used by the AI build explainer.
+     */
+    public record PipelineRef(long applicationId, String project, String client, String owner, String environment,
+                              String job) {
     }
 
     record Pipeline(Application app, String environment, String job) {

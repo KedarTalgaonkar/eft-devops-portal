@@ -14,10 +14,6 @@ import java.util.Optional;
 public enum PortalRole {
     VIEWER, EDITOR, ADMIN;
 
-    public String authority() {
-        return "ROLE_" + name();
-    }
-
     public static Optional<PortalRole> parse(String value) {
         if (value == null || value.isBlank()) {
             return Optional.empty();
@@ -31,5 +27,9 @@ public enum PortalRole {
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
+    }
+
+    public String authority() {
+        return "ROLE_" + name();
     }
 }

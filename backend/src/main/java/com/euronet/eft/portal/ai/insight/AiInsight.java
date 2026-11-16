@@ -6,9 +6,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 
-/** A stored AI result (JSON), generated once and reused: a build explanation, an executive digest. */
+/**
+ * A stored AI result (JSON), generated once and reused: a build explanation, an executive digest.
+ */
 @Entity
 @Table(name = "ai_insight")
 public class AiInsight {
@@ -47,7 +50,9 @@ public class AiInsight {
         this.subject = subject;
     }
 
-    /** Sets (or replaces, on regenerate) the result. */
+    /**
+     * Sets (or replaces, on regenerate) the result.
+     */
     public void update(String content, String mode, String model, String masking, String createdBy) {
         this.content = content;
         this.mode = mode;

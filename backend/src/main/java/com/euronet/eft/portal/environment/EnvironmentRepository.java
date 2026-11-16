@@ -1,7 +1,8 @@
 package com.euronet.eft.portal.environment;
 
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
 
 public interface EnvironmentRepository extends JpaRepository<DeliveryEnvironment, String> {
 

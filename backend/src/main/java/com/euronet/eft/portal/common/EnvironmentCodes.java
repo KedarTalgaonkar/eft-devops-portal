@@ -11,18 +11,20 @@ import java.util.Optional;
 public final class EnvironmentCodes {
 
     private static final Map<String, String> ALIASES = Map.of(
-            "DEV", "DEVELOP",
-            "DEVELOPMENT", "DEVELOP",
-            "PRODUCTION", "PROD",
-            "PRE_PROD", "PREPROD",
-            "PRE_PRODUCTION", "PREPROD",
-            "PERFORMANCE", "PERF",
-            "STAGING", "STAGE");
+        "DEV", "DEVELOP",
+        "DEVELOPMENT", "DEVELOP",
+        "PRODUCTION", "PROD",
+        "PRE_PROD", "PREPROD",
+        "PRE_PRODUCTION", "PREPROD",
+        "PERFORMANCE", "PERF",
+        "STAGING", "STAGE");
 
     private EnvironmentCodes() {
     }
 
-    /** " sit " -> SIT, "Pre-Prod" -> PREPROD, "Dev" -> DEVELOP; blank -> empty. */
+    /**
+     * " sit " -> SIT, "Pre-Prod" -> PREPROD, "Dev" -> DEVELOP; blank -> empty.
+     */
     public static Optional<String> normalize(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.empty();

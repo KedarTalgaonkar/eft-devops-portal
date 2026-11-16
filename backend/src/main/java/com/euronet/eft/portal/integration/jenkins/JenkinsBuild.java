@@ -10,13 +10,13 @@ import java.time.Instant;
  * @param version    artifact version that was built or deployed, when the job publishes one
  */
 public record JenkinsBuild(
-        String job,
-        int number,
-        BuildResult result,
-        Instant startedAt,
-        Duration duration,
-        String triggeredBy,
-        String version,
-        boolean deployment,
-        String url) {
+    String job,
+    int number,
+    BuildResult result,
+    Instant startedAt,
+    Duration duration,
+    String triggeredBy,
+    String version,
+    boolean deployment,
+    String url) {
 }

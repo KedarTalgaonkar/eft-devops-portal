@@ -5,8 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-quality-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Code quality" subtitle="SonarQube quality gates, reliability, security and maintainability"
-                      [logos]="['sonarqube']" [tabs]="tabs" />
+    <app-module-shell
+      heading="Code quality"
+      subtitle="SonarQube quality gates, reliability, security and maintainability"
+      [logos]="['sonarqube']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class QualityShell {

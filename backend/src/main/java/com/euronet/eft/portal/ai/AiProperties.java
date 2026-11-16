@@ -1,44 +1,34 @@
 package com.euronet.eft.portal.ai;
 
-import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.List;
 
 /**
  * AI settings ({@code portal.ai.*}, from environment variables; see .env.example).
  *
- * @param mode               OFF (default): no AI anywhere; MOCK: built-in sample answers, no external calls; LIVE: Claude
- * @param provider           where LIVE calls go: Anthropic API, Amazon Bedrock or Microsoft Foundry
- * @param model              Claude model id (Bedrock: the "anthropic." prefix is added automatically)
- * @param apiKey             Anthropic API key (provider ANTHROPIC only; Bedrock/Foundry use their own credentials)
- * @param monthlyBudgetUsd   AI calls are refused once the estimated spend this calendar month reaches this
- * @param userDailyLimit     generations per user per day (scheduled jobs are exempt)
- * @param maxLogKb           how much of a build log (its end) is analysed
- * @param maskDomains        host names ending in one of these are masked before sending (plus all inventory hosts)
- * @param pricing            USD per million tokens, for the cost estimate only
+ * @param mode             OFF (default): no AI anywhere; MOCK: built-in sample answers, no external calls; LIVE: Claude
+ * @param provider         where LIVE calls go: Anthropic API, Amazon Bedrock or Microsoft Foundry
+ * @param model            Claude model id (Bedrock: the "anthropic." prefix is added automatically)
+ * @param apiKey           Anthropic API key (provider ANTHROPIC only; Bedrock/Foundry use their own credentials)
+ * @param monthlyBudgetUsd AI calls are refused once the estimated spend this calendar month reaches this
+ * @param userDailyLimit   generations per user per day (scheduled jobs are exempt)
+ * @param maxLogKb         how much of a build log (its end) is analysed
+ * @param maskDomains      host names ending in one of these are masked before sending (plus all inventory hosts)
+ * @param pricing          USD per million tokens, for the cost estimate only
  */
 @ConfigurationProperties(prefix = "portal.ai")
 public record AiProperties(
-        Mode mode,
-        Provider provider,
-        String model,
-        String apiKey,
-        double monthlyBudgetUsd,
-        int userDailyLimit,
-        int maxLogKb,
-        List<String> maskDomains,
-        Pricing pricing,
-        Digest digest) {
-
-    public enum Mode { OFF, MOCK, LIVE }
-
-    public enum Provider { ANTHROPIC, BEDROCK, FOUNDRY }
-
-    public record Pricing(double inputPerMtok, double outputPerMtok, double cacheReadPerMtok) {
-    }
-
-    /** Executive digest schedule (cron in the given zone). */
-    public record Digest(boolean enabled, String cron, String zone) {
-    }
+    Mode mode,
+    Provider provider,
+    String model,
+    String apiKey,
+    double monthlyBudgetUsd,
+    int userDailyLimit,
+    int maxLogKb,
+    List<String> maskDomains,
+    Pricing pricing,
+    Digest digest) {
 
     public AiProperties {
         mode = mode == null ? Mode.OFF : mode;
@@ -54,5 +44,18 @@ public record AiProperties(
 
     public boolean enabled() {
         return mode != Mode.OFF;
+    }
+
+    public enum Mode {OFF, MOCK, LIVE}
+
+    public enum Provider {ANTHROPIC, BEDROCK, FOUNDRY}
+
+    public record Pricing(double inputPerMtok, double outputPerMtok, double cacheReadPerMtok) {
+    }
+
+    /**
+     * Executive digest schedule (cron in the given zone).
+     */
+    public record Digest(boolean enabled, String cron, String zone) {
     }
 }

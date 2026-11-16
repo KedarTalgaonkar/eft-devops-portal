@@ -8,6 +8,9 @@ import com.euronet.eft.portal.integration.github.GithubModels.DailyCount;
 import com.euronet.eft.portal.integration.github.GithubModels.PullRequestInfo;
 import com.euronet.eft.portal.integration.github.GithubModels.RepositoryInfo;
 import com.euronet.eft.portal.integration.github.GithubModels.TeamSummary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -17,8 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(prefix = "portal.integrations.github", name = "mode", havingValue = "mock", matchIfMissing = true)
@@ -40,6 +41,11 @@ public class MockGithubClient implements GithubClient {
         TEAMS.put("eft-devops", List.of("jenkins-shared-library", "tomcat-ansible", "eft-devops-portal"));
     }
 
+    private static String title(String slug) {
+        String rest = slug.substring(slug.indexOf('-') + 1);
+        return "EFT " + Character.toUpperCase(rest.charAt(0)) + rest.substring(1);
+    }
+
     @Override
     public List<TeamSummary> teams() {
         return TEAMS.entrySet().stream().map(e -> {
@@ -59,9 +65,9 @@ public class MockGithubClient implements GithubClient {
         return repos.stream().map(name -> {
             Random r = new Random(name.hashCode());
             return new RepositoryInfo(name, ORG + "/" + name, team, r.nextInt(4) == 0 ? "master" : "main",
-                    name.contains("portal") && r.nextBoolean() ? "TypeScript" : "Java", "internal", false,
-                    r.nextInt(6), commits(name, 30).totalCommits(),
-                    now.minus(r.nextInt(14 * 24), ChronoUnit.HOURS), "https://github.example.internal/" + ORG + "/" + name);
+                name.contains("portal") && r.nextBoolean() ? "TypeScript" : "Java", "internal", false,
+                r.nextInt(6), commits(name, 30).totalCommits(),
+                now.minus(r.nextInt(14 * 24), ChronoUnit.HOURS), "https://github.example.internal/" + ORG + "/" + name);
         }).toList();
     }
 
@@ -105,21 +111,16 @@ public class MockGithubClient implements GithubClient {
                     Instant created = now.minus(1 + r.nextInt(30 * 24), ChronoUnit.HOURS);
                     int number = 10 + r.nextInt(400);
                     prs.add(new PullRequestInfo(repo, number, TITLES[r.nextInt(TITLES.length)],
-                            AUTHORS[r.nextInt(AUTHORS.length)], prState, r.nextInt(6) == 0, r.nextInt(4), created,
-                            created.plus(r.nextInt(48), ChronoUnit.HOURS),
-                            "https://github.example.internal/" + ORG + "/" + repo + "/pull/" + number));
+                        AUTHORS[r.nextInt(AUTHORS.length)], prState, r.nextInt(6) == 0, r.nextInt(4), created,
+                        created.plus(r.nextInt(48), ChronoUnit.HOURS),
+                        "https://github.example.internal/" + ORG + "/" + repo + "/pull/" + number));
                 }
             }
         }
         return prs.stream()
-                .filter(p -> state == null || state.equalsIgnoreCase("all") || p.state().equalsIgnoreCase(state))
-                .sorted(Comparator.comparing(PullRequestInfo::updatedAt).reversed())
-                .toList();
-    }
-
-    private static String title(String slug) {
-        String rest = slug.substring(slug.indexOf('-') + 1);
-        return "EFT " + Character.toUpperCase(rest.charAt(0)) + rest.substring(1);
+            .filter(p -> state == null || state.equalsIgnoreCase("all") || p.state().equalsIgnoreCase(state))
+            .sorted(Comparator.comparing(PullRequestInfo::updatedAt).reversed())
+            .toList();
     }
 
     @Override

@@ -7,7 +7,9 @@ import org.springframework.security.authorization.event.AuthorizationDeniedEvent
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-/** Audits access denials of signed-in users (anonymous 401s are expected and not stored). */
+/**
+ * Audits access denials of signed-in users (anonymous 401s are expected and not stored).
+ */
 @Component
 public class SecurityAuditListener {
 

@@ -10,7 +10,10 @@ export function passwordChecks(password: string, username: string): PolicyCheck[
   return [
     { label: 'At least 12 characters', ok: password.length >= 12 && password.length <= 128 },
     { label: 'Three of: lower case, upper case, digit, symbol', ok: classes >= 3 },
-    { label: 'Does not contain your username', ok: !username || username.length < 3 || !lower.includes(username.toLowerCase()) },
+    {
+      label: 'Does not contain your username',
+      ok: !username || username.length < 3 || !lower.includes(username.toLowerCase()),
+    },
     { label: 'No character repeated 4 times in a row', ok: !/(.)\1{3,}/.test(password) },
   ];
 }

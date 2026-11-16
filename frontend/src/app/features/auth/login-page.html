@@ -1,76 +1,76 @@
 <div class="login">
-  <section class="story" aria-hidden="true">
-    <app-brand-mark />
+  <section aria-hidden="true" class="story">
+    <app-brand-mark/>
     <div class="pitch">
       <h1>One view of every EFT application</h1>
       <p>Delivery, code quality, security and service health for leadership at a glance, with the detail support teams
         need to act.</p>
     </div>
     <div class="logos">
-      <app-tool-logo name="jenkins" [size]="40" [tile]="true" />
-      <app-tool-logo name="github" [size]="40" [tile]="true" />
-      <app-tool-logo name="sonarqube" [size]="40" [tile]="true" />
-      <app-tool-logo name="jfrog" [size]="40" [tile]="true" />
-      <app-tool-logo name="grafana" [size]="40" [tile]="true" />
-      <app-tool-logo name="prometheus" [size]="40" [tile]="true" />
+      <app-tool-logo [size]="40" [tile]="true" name="jenkins"/>
+      <app-tool-logo [size]="40" [tile]="true" name="github"/>
+      <app-tool-logo [size]="40" [tile]="true" name="sonarqube"/>
+      <app-tool-logo [size]="40" [tile]="true" name="jfrog"/>
+      <app-tool-logo [size]="40" [tile]="true" name="grafana"/>
+      <app-tool-logo [size]="40" [tile]="true" name="prometheus"/>
     </div>
     <p class="fine">Authorised Euronet personnel only. Access and actions are logged.</p>
   </section>
 
   <main class="panel">
     <div class="card signin">
-      <img src="/favicon.svg" alt="" width="44" height="44" />
+      <img alt="" height="44" src="/favicon.svg" width="44"/>
       <h2>Sign in</h2>
       <p class="muted">EFT DevOps Portal · Euronet India</p>
 
       @if (notice(); as n) {
-        <div class="notice" [class]="'notice ' + n.tone" role="status">{{ n.text }}</div>
+      <div [class]="'notice ' + n.tone" class="notice" role="status">{{ n.text }}</div>
       }
 
       @if (ready()) {
-        @if (providers().ssoEnabled) {
-          <button type="button" class="btn primary sso" (click)="sso()">
-            <mat-icon aria-hidden="true">badge</mat-icon>
-            {{ providers().ssoLabel }}
-          </button>
-          <p class="hint">Uses your Euronet account and multi-factor authentication.</p>
-        }
+      @if (providers().ssoEnabled) {
+      <button (click)="sso()" class="btn primary sso" type="button">
+        <mat-icon aria-hidden="true">badge</mat-icon>
+        {{ providers().ssoLabel }}
+      </button>
+      <p class="hint">Uses your Euronet account and multi-factor authentication.</p>
+      }
 
-        @if (providers().localEnabled) {
-          @if (providers().ssoEnabled && !showLocal()) {
-            <button type="button" class="link" (click)="showLocal.set(true)">Use a local account instead</button>
-          } @else {
-            @if (providers().ssoEnabled) {
-              <div class="divider"><span>or local account</span></div>
-            }
-            <form (submit)="$event.preventDefault(); signIn(user.value, pass.value)" novalidate>
-              <label for="username">Username</label>
-              <input #user id="username" name="username" class="field" autocomplete="username" autocapitalize="off"
-                     spellcheck="false" maxlength="100" required [disabled]="busy()" />
-              <label for="password">Password</label>
-              <div class="password">
-                <input #pass id="password" name="password" class="field" [type]="showPassword() ? 'text' : 'password'"
-                       autocomplete="current-password" maxlength="200" required [disabled]="busy()" />
-                <button type="button" class="reveal" (click)="showPassword.set(!showPassword())"
-                        [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
-                  <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                </button>
-              </div>
-              @if (formError()) {
-                <div class="notice bad" role="alert">{{ formError() }}</div>
-              }
-              <button type="submit" class="btn" [class.primary]="!providers().ssoEnabled" [disabled]="busy()">
-                {{ busy() ? 'Signing in…' : 'Sign in' }}
-              </button>
-            </form>
-          }
-        }
-
-        @if (!providers().ssoEnabled && !providers().localEnabled) {
-          <div class="notice bad">No sign-in method is enabled on this server. Contact the DevOps team.</div>
-        }
+      @if (providers().localEnabled) {
+      @if (providers().ssoEnabled && !showLocal()) {
+      <button (click)="showLocal.set(true)" class="link" type="button">Use a local account instead</button>
       } @else {
-        <div class="loading" aria-label="Loading">Checking your session…</div>
+      @if (providers().ssoEnabled) {
+      <div class="divider"><span>or local account</span></div>
+      }
+      <form (submit)="$event.preventDefault(); signIn(user.value, pass.value)" novalidate>
+        <label for="username">Username</label>
+        <input #user [disabled]="busy()" autocapitalize="off" autocomplete="username" class="field" id="username"
+               maxlength="100" name="username" required spellcheck="false"/>
+        <label for="password">Password</label>
+        <div class="password">
+          <input #pass [disabled]="busy()" [type]="showPassword() ? 'text' : 'password'" autocomplete="current-password" class="field"
+                 id="password" maxlength="200" name="password" required/>
+          <button (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'" class="reveal"
+                  type="button">
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
+        @if (formError()) {
+        <div class="notice bad" role="alert">{{ formError() }}</div>
+        }
+        <button [class.primary]="!providers().ssoEnabled" [disabled]="busy()" class="btn" type="submit">
+          {{ busy() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+      }
+      }
+
+      @if (!providers().ssoEnabled && !providers().localEnabled) {
+      <div class="notice bad">No sign-in method is enabled on this server. Contact the DevOps team.</div>
+      }
+      } @else {
+      <div aria-label="Loading" class="loading">Checking your session…</div>
       }
     </div>
   </main>

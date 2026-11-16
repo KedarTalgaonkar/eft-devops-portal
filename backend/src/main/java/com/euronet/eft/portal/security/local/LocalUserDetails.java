@@ -1,11 +1,12 @@
 package com.euronet.eft.portal.security.local;
 
-import java.io.Serial;
-import java.util.Collection;
-import java.util.List;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.io.Serial;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Principal of a local-account session. Serializable because sessions live in PostgreSQL;
@@ -17,13 +18,13 @@ public final class LocalUserDetails implements UserDetails, CredentialsContainer
     private static final long serialVersionUID = 1L;
 
     private final String username;
-    private String passwordHash;
     private final String displayName;
     private final String email;
     private final List<GrantedAuthority> authorities;
     private final boolean enabled;
     private final boolean accountNonLocked;
     private final boolean mustChangePassword;
+    private String passwordHash;
 
     public LocalUserDetails(String username, String passwordHash, String displayName, String email,
                             List<GrantedAuthority> authorities, boolean enabled, boolean accountNonLocked,

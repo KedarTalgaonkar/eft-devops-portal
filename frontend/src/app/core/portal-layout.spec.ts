@@ -16,7 +16,14 @@ async function render(roles: PortalRole[]) {
   const loaded = auth.load();
   http.expectOne('/api/auth/session').flush({
     authenticated: true,
-    user: { username: 'priya.k', displayName: 'Priya Kulkarni', email: null, roles, source: 'LOCAL', mustChangePassword: false },
+    user: {
+      username: 'priya.k',
+      displayName: 'Priya Kulkarni',
+      email: null,
+      roles,
+      source: 'LOCAL',
+      mustChangePassword: false,
+    },
     providers: { ssoEnabled: true, ssoLabel: 'Euronet SSO', localEnabled: true },
   });
   await loaded;
@@ -25,14 +32,40 @@ async function render(roles: PortalRole[]) {
   fixture.detectChanges();
   const soon = new Date(Date.now() + 3_600_000).toISOString();
   http.expectOne('/api/announcements/active').flush([
-    { id: 1, kind: 'RELEASE', message: 'IMPS 2.4 release to UAT tonight', linkUrl: '/pipelines/deployments', linkLabel: 'Details',
-      startsAt: new Date().toISOString(), endsAt: soon, status: 'ACTIVE', createdBy: 'release-mgr', createdAt: new Date().toISOString(),
-      updatedBy: null, updatedAt: null },
-    { id: 2, kind: 'INCIDENT', message: 'SIT switch is down', linkUrl: null, linkLabel: null,
-      startsAt: new Date().toISOString(), endsAt: soon, status: 'ACTIVE', createdBy: 'oncall', createdAt: new Date().toISOString(),
-      updatedBy: null, updatedAt: null },
+    {
+      id: 1,
+      kind: 'RELEASE',
+      message: 'IMPS 2.4 release to UAT tonight',
+      linkUrl: '/pipelines/deployments',
+      linkLabel: 'Details',
+      startsAt: new Date().toISOString(),
+      endsAt: soon,
+      status: 'ACTIVE',
+      createdBy: 'release-mgr',
+      createdAt: new Date().toISOString(),
+      updatedBy: null,
+      updatedAt: null,
+    },
+    {
+      id: 2,
+      kind: 'INCIDENT',
+      message: 'SIT switch is down',
+      linkUrl: null,
+      linkLabel: null,
+      startsAt: new Date().toISOString(),
+      endsAt: soon,
+      status: 'ACTIVE',
+      createdBy: 'oncall',
+      createdAt: new Date().toISOString(),
+      updatedBy: null,
+      updatedAt: null,
+    },
   ]);
-  http.match('brand/brand.json').forEach((r) => r.flush({ logo: '', logoAlt: 'Euronet', region: 'India', product: 'EFT DevOps Portal' }));
+  http
+    .match('brand/brand.json')
+    .forEach((r) =>
+      r.flush({ logo: '', logoAlt: 'Euronet', region: 'India', product: 'EFT DevOps Portal' }),
+    );
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;

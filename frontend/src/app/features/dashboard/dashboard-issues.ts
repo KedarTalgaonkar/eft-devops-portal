@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { Environments } from '../../core/environments';
-import { Severity, ago } from '../../core/models';
+import { ago, Severity } from '../../core/models';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { AttentionReport } from './dashboard.models';
@@ -16,15 +16,40 @@ import { AttentionReport } from './dashboard.models';
   imports: [DatePipe, MatTooltipModule, LoadState, StatusChip],
   template: `
     <div class="filters">
-      <input class="search" type="search" placeholder="Search issue, owner or environment" aria-label="Search issues"
-             [value]="search()" (input)="search.set($any($event.target).value)" />
+      <input
+        class="search"
+        type="search"
+        placeholder="Search issue, owner or environment"
+        aria-label="Search issues"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
       <div class="chips" role="group" aria-label="Area">
-        <button type="button" class="chip-btn" [attr.aria-pressed]="area() === ''" (click)="area.set('')">All areas</button>
+        <button
+          type="button"
+          class="chip-btn"
+          [attr.aria-pressed]="area() === ''"
+          (click)="area.set('')"
+        >
+          All areas
+        </button>
         @for (a of areas(); track a) {
-          <button type="button" class="chip-btn" [attr.aria-pressed]="area() === a" (click)="area.set(a)">{{ a }}</button>
+          <button
+            type="button"
+            class="chip-btn"
+            [attr.aria-pressed]="area() === a"
+            (click)="area.set(a)"
+          >
+            {{ a }}
+          </button>
         }
       </div>
-      <select class="select" aria-label="Minimum severity" [value]="minSeverity()" (change)="minSeverity.set($any($event.target).value)">
+      <select
+        class="select"
+        aria-label="Minimum severity"
+        [value]="minSeverity()"
+        (change)="minSeverity.set($any($event.target).value)"
+      >
         <option value="LOW">All severities</option>
         <option value="MEDIUM">Medium and above</option>
         <option value="HIGH">High and above</option>
@@ -32,24 +57,43 @@ import { AttentionReport } from './dashboard.models';
       </select>
     </div>
 
-    <app-load-state [loading]="report.isLoading()" [error]="report.error()" [empty]="report.hasValue() && rows().length === 0"
-                    what="issues" emptyText="No open issues match these filters." (retry)="report.reload()" />
+    <app-load-state
+      [loading]="report.isLoading()"
+      [error]="report.error()"
+      [empty]="report.hasValue() && rows().length === 0"
+      what="issues"
+      emptyText="No open issues match these filters."
+      (retry)="report.reload()"
+    />
     @if (rows().length) {
       <div class="table-wrap">
         <table class="data" aria-label="Open issues">
           <thead>
-            <tr><th>Severity</th><th>Area</th><th>Issue</th><th>Details</th><th>Environment</th><th>Owner</th><th>Since</th><th></th></tr>
+            <tr>
+              <th>Severity</th>
+              <th>Area</th>
+              <th>Issue</th>
+              <th>Details</th>
+              <th>Environment</th>
+              <th>Owner</th>
+              <th>Since</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
             @for (i of rows(); track $index) {
               <tr>
                 <td><app-status-chip [status]="i.severity" /></td>
                 <td>{{ i.area }}</td>
-                <td class="wrap"><strong>{{ i.title }}</strong></td>
+                <td class="wrap">
+                  <strong>{{ i.title }}</strong>
+                </td>
                 <td class="wrap muted">{{ i.detail }}</td>
                 <td>{{ i.environment ? envs.name(i.environment) : '—' }}</td>
                 <td>{{ i.owner ?? '—' }}</td>
-                <td [matTooltip]="(i.since | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(i.since) }}</td>
+                <td [matTooltip]="(i.since | date: 'dd MMM yyyy, HH:mm') ?? ''">
+                  {{ ago(i.since) }}
+                </td>
                 <td><button class="btn" type="button" (click)="open(i.link)">Open</button></td>
               </tr>
             }
@@ -60,19 +104,23 @@ import { AttentionReport } from './dashboard.models';
   `,
 })
 export class DashboardIssuesPage {
-  private readonly router = inject(Router);
-  protected readonly envs = inject(Environments);
-  protected readonly ago = ago;
-  protected readonly search = linkedSignal(() => this.q() ?? '');
   /** ?area=Delivery&severity=HIGH&q= deep links from cards elsewhere. */
   readonly areaParam = input<string | undefined>(undefined, { alias: 'area' });
   readonly severity = input<string>();
   readonly q = input<string>();
+  protected readonly envs = inject(Environments);
+  protected readonly ago = ago;
+  protected readonly search = linkedSignal(() => this.q() ?? '');
   protected readonly area = linkedSignal(() => this.areaParam() ?? '');
-  protected readonly minSeverity = linkedSignal<Severity>(() => (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(this.severity() ?? '') ? (this.severity() as Severity) : 'LOW'));
-
+  protected readonly minSeverity = linkedSignal<Severity>(() =>
+    ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(this.severity() ?? '')
+      ? (this.severity() as Severity)
+      : 'LOW',
+  );
   protected readonly report = httpResource<AttentionReport>(() => apiUrl('dashboard/attention'));
-  protected readonly areas = computed(() => [...new Set((this.report.value()?.items ?? []).map((i) => i.area))]);
+  protected readonly areas = computed(() => [
+    ...new Set((this.report.value()?.items ?? []).map((i) => i.area)),
+  ]);
   protected readonly rows = computed(() => {
     const order: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
     const max = order.indexOf(this.minSeverity());
@@ -80,8 +128,15 @@ export class DashboardIssuesPage {
     return (this.report.value()?.items ?? [])
       .filter((i) => order.indexOf(i.severity) <= max)
       .filter((i) => !this.area() || i.area === this.area())
-      .filter((i) => !q || [i.title, i.detail, i.owner ?? '', i.environment ?? ''].some((v) => v.toLowerCase().includes(q)));
+      .filter(
+        (i) =>
+          !q ||
+          [i.title, i.detail, i.owner ?? '', i.environment ?? ''].some((v) =>
+            v.toLowerCase().includes(q),
+          ),
+      );
   });
+  private readonly router = inject(Router);
 
   protected open(link: string): void {
     void this.router.navigateByUrl(link);

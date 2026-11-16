@@ -1,17 +1,20 @@
 package com.euronet.eft.portal.inventory.importer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
 
-/** New environments, owner and repository columns import without code changes. */
+import java.io.ByteArrayInputStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * New environments, owner and repository columns import without code changes.
+ */
 class ScalableLayoutParserTest {
 
     @Test
     void readsAnyEnvironmentGroupAndOptionalColumns() throws Exception {
         InventoryWorkbook wb = new InventoryExcelParser().parse(new ByteArrayInputStream(
-                InventoryWorkbookFixture.scalable("Deepak", "http://preprod-recon.example.internal:8080/")));
+            InventoryWorkbookFixture.scalable("Deepak", "http://preprod-recon.example.internal:8080/")));
 
         assertThat(wb.warnings()).isEmpty();
         assertThat(wb.deployments()).extracting(ParsedDeployment::environment).containsExactly("PERF", "PREPROD");

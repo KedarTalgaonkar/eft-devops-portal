@@ -18,13 +18,25 @@ const EXPLAINABLE = new Set(['FAILURE', 'UNSTABLE', 'ABORTED']);
 /** Latest Jenkins builds of one project in one environment, with an AI explanation for failed ones. */
 @Component({
   selector: 'app-builds-dialog',
-  imports: [MatDialogModule, MatButtonModule, MatIconModule, MatTooltipModule, DatePipe, DurationPipe, StatusChip, LoadState,
-    BuildExplanationPanel],
+  imports: [
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    DatePipe,
+    DurationPipe,
+    StatusChip,
+    LoadState,
+    BuildExplanationPanel,
+  ],
   template: `
     <h2 mat-dialog-title>{{ data.project }} · {{ data.environment }}</h2>
     <mat-dialog-content>
-      <p class="muted">Jenkins job <code>{{ data.jenkinsJob }}</code> · latest 50 builds
-        @if (ai.enabled()) { · use <strong>Explain</strong> on a failed build for the likely cause and fix }
+      <p class="muted">
+        Jenkins job <code>{{ data.jenkinsJob }}</code> · latest 50 builds
+        @if (ai.enabled()) {
+          · use <strong>Explain</strong> on a failed build for the likely cause and fix
+        }
       </p>
       <app-load-state
         [loading]="builds.isLoading()"
@@ -70,10 +82,20 @@ const EXPLAINABLE = new Set(['FAILURE', 'UNSTABLE', 'ABORTED']);
                   @if (ai.enabled()) {
                     <td class="ai-cell">
                       @if (explainable(b)) {
-                        <button type="button" class="explain" [class.on]="open() === b.number" (click)="toggle(b.number)"
-                                [attr.aria-expanded]="open() === b.number"
-                                [matTooltip]="open() === b.number ? 'Hide the explanation' : 'Ask AI why this build failed'">
-                          <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ open() === b.number ? 'Hide' : 'Explain' }}
+                        <button
+                          type="button"
+                          class="explain"
+                          [class.on]="open() === b.number"
+                          (click)="toggle(b.number)"
+                          [attr.aria-expanded]="open() === b.number"
+                          [matTooltip]="
+                            open() === b.number
+                              ? 'Hide the explanation'
+                              : 'Ask AI why this build failed'
+                          "
+                        >
+                          <mat-icon aria-hidden="true">auto_awesome</mat-icon
+                          >{{ open() === b.number ? 'Hide' : 'Explain' }}
                         </button>
                       }
                     </td>
@@ -82,7 +104,11 @@ const EXPLAINABLE = new Set(['FAILURE', 'UNSTABLE', 'ABORTED']);
                 @if (open() === b.number) {
                   <tr class="explain-row">
                     <td colspan="8">
-                      <app-build-explanation [applicationId]="data.applicationId" [environment]="data.environment" [buildNumber]="b.number" />
+                      <app-build-explanation
+                        [applicationId]="data.applicationId"
+                        [environment]="data.environment"
+                        [buildNumber]="b.number"
+                      />
                     </td>
                   </tr>
                 }
@@ -97,14 +123,49 @@ const EXPLAINABLE = new Set(['FAILURE', 'UNSTABLE', 'ABORTED']);
     </mat-dialog-actions>
   `,
   styles: `
-    .ai-cell { text-align: right; }
-    .explain { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #cfc8ff; background: #f5f3ff; color: #5b47c7;
-      border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    .explain:hover, .explain.on { background: #ebe7ff; border-color: #a99cf5; }
-    .explain mat-icon { font-size: 15px; width: 15px; height: 15px; }
-    tr.open > td { background: #faf9ff; }
-    .explain-row > td { padding: 4px 8px 14px; background: #faf9ff; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .ai-cell {
+      text-align: right;
+    }
+    .explain {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #cfc8ff;
+      background: #f5f3ff;
+      color: #5b47c7;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .explain:hover,
+    .explain.on {
+      background: #ebe7ff;
+      border-color: #a99cf5;
+    }
+    .explain mat-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+    }
+    tr.open > td {
+      background: #faf9ff;
+    }
+    .explain-row > td {
+      padding: 4px 8px 14px;
+      background: #faf9ff;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
   `,
 })
 export class BuildsDialog {

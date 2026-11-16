@@ -25,9 +25,11 @@ public record BuildLog(String tail, List<String> earlyErrors, long totalBytes, b
     static final int MAX_EARLY_ERRORS = 80;
     private static final int MAX_LINE = 2000;
     private static final Pattern ERROR_LINE = Pattern.compile(
-            "(?i)(\\[ERROR]|\\berror\\b|exception|\\bfailed\\b|\\bfailure\\b|\\bfatal\\b|caused by)");
+        "(?i)(\\[ERROR]|\\berror\\b|exception|\\bfailed\\b|\\bfailure\\b|\\bfatal\\b|caused by)");
 
-    /** Streams a log and keeps only what is needed, so a 100 MB log does not end up in memory. */
+    /**
+     * Streams a log and keeps only what is needed, so a 100 MB log does not end up in memory.
+     */
     public static BuildLog read(InputStream in, int maxBytes) {
         ArrayDeque<String> tail = new ArrayDeque<>();
         List<long[]> errorIndex = new ArrayList<>();
@@ -45,7 +47,7 @@ public record BuildLog(String tail, List<String> earlyErrors, long totalBytes, b
                 total += size;
                 if (ERROR_LINE.matcher(line).find() && errors.size() < 400) {
                     errors.add(line);
-                    errorIndex.add(new long[] {lineNo});
+                    errorIndex.add(new long[]{lineNo});
                 }
                 tail.addLast(line);
                 tailBytes += size;

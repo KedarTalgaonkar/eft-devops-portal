@@ -24,7 +24,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           auth.sessionExpired();
           return throwError(() => err);
         }
-        if (err.status === 403 && (err.error as { code?: string } | null)?.code === 'PASSWORD_CHANGE_REQUIRED') {
+        if (
+          err.status === 403 &&
+          (err.error as { code?: string } | null)?.code === 'PASSWORD_CHANGE_REQUIRED'
+        ) {
           void router.navigate(['/account/password']);
           return throwError(() => err);
         }

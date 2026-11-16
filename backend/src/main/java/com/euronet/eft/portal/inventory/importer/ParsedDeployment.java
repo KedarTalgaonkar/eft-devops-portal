@@ -9,15 +9,15 @@ import java.util.List;
  * @param repositories from an optional "Repository" column (comma or newline separated)
  */
 public record ParsedDeployment(
-        String owner,
-        String application,
-        String client,
-        String environment,
-        String contextName,
-        String baseUrl,
-        String tomcatVersion,
-        String javaVersion,
-        boolean tomcatAdminDone,
-        boolean buildXmlDone,
-        List<String> repositories) {
+    String owner,
+    String application,
+    String client,
+    String environment,
+    String contextName,
+    String baseUrl,
+    String tomcatVersion,
+    String javaVersion,
+    boolean tomcatAdminDone,
+    boolean buildXmlDone,
+    List<String> repositories) {
 }

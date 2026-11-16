@@ -16,7 +16,9 @@ public final class PasswordPolicy {
     private PasswordPolicy() {
     }
 
-    /** Problems with the password; empty when it is acceptable. */
+    /**
+     * Problems with the password; empty when it is acceptable.
+     */
     public static List<String> violations(String password, String username) {
         List<String> problems = new ArrayList<>();
         if (password == null || password.length() < MIN_LENGTH) {
@@ -35,7 +37,7 @@ public final class PasswordPolicy {
             problems.add("at least three of: lower case, upper case, digit, symbol");
         }
         if (username != null && username.length() >= 3
-                && password.toLowerCase(Locale.ROOT).contains(username.toLowerCase(Locale.ROOT))) {
+            && password.toLowerCase(Locale.ROOT).contains(username.toLowerCase(Locale.ROOT))) {
             problems.add("must not contain the username");
         }
         if (password.matches(".*(.)\\1{3,}.*")) {

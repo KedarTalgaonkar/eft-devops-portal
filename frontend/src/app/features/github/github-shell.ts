@@ -5,8 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-github-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Source code" subtitle="Team-wise repositories, commit activity and pull requests"
-                      [logos]="['github']" [tabs]="tabs" />
+    <app-module-shell
+      heading="Source code"
+      subtitle="Team-wise repositories, commit activity and pull requests"
+      [logos]="['github']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class GithubShell {

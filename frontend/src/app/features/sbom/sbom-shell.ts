@@ -5,9 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-sbom-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="SBOM & vulnerabilities"
-                      subtitle="Software bills of materials (CycloneDX) and the known vulnerabilities in them"
-                      [logos]="['java']" [tabs]="tabs" />
+    <app-module-shell
+      heading="SBOM & vulnerabilities"
+      subtitle="Software bills of materials (CycloneDX) and the known vulnerabilities in them"
+      [logos]="['java']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class SbomShell {

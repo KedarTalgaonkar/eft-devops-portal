@@ -1,6 +1,7 @@
 package com.euronet.eft.portal.integration.sbom;
 
 import com.euronet.eft.portal.integration.IntegrationHealth;
+
 import java.util.List;
 
 /**
@@ -9,13 +10,14 @@ import java.util.List;
  */
 public interface SbomScanner extends IntegrationHealth {
 
-    enum Severity { CRITICAL, HIGH, MEDIUM, LOW }
+    ScanOutcome scan(String projectName, String projectVersion);
 
-    record Finding(String vulnId, Severity severity, String component, String version, String fixedVersion, String title) {
+    enum Severity {CRITICAL, HIGH, MEDIUM, LOW}
+
+    record Finding(String vulnId, Severity severity, String component, String version, String fixedVersion,
+                   String title) {
     }
 
     record ScanOutcome(String format, String generator, int componentCount, List<Finding> findings) {
     }
-
-    ScanOutcome scan(String projectName, String projectVersion);
 }

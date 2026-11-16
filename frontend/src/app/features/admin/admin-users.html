@@ -1,78 +1,96 @@
 <div class="card">
   <div class="card-title">New local account</div>
-  <form class="create" (submit)="$event.preventDefault(); create(u.value, n.value, e.value, r.value); u.value = ''; n.value = ''; e.value = ''">
-    <label>Username <input #u class="field" required maxlength="100" autocomplete="off" placeholder="e.g. jenkins.breakglass" /></label>
-    <label>Display name <input #n class="field" maxlength="200" autocomplete="off" /></label>
-    <label>E-mail <input #e class="field" type="email" maxlength="200" autocomplete="off" /></label>
+  <form (submit)="$event.preventDefault(); create(u.value, n.value, e.value, r.value); u.value = ''; n.value = ''; e.value = ''"
+        class="create">
+    <label>Username <input #u autocomplete="off" class="field" maxlength="100" placeholder="e.g. jenkins.breakglass"
+                           required/></label>
+    <label>Display name <input #n autocomplete="off" class="field" maxlength="200"/></label>
+    <label>E-mail <input #e autocomplete="off" class="field" maxlength="200" type="email"/></label>
     <label>Role
       <select #r class="field">
         @for (role of roleOptions; track role) {
-          <option [value]="role">{{ role | titlecase }}</option>
+        <option [value]="role">{{ role | titlecase }}</option>
         }
       </select>
     </label>
-    <button class="btn primary" type="submit" [disabled]="busy()">Create with temporary password</button>
+    <button [disabled]="busy()" class="btn primary" type="submit">Create with temporary password</button>
   </form>
-  <p class="muted">A strong temporary password is generated; the user must change it at first sign-in. Prefer single sign-on
+  <p class="muted">A strong temporary password is generated; the user must change it at first sign-in. Prefer single
+    sign-on
     for people: local accounts are for break-glass access and users without a Euronet account.</p>
 </div>
 
 @if (issued(); as i) {
-  <div class="card secret" role="status">
-    <strong>Temporary password for {{ i.username }}. Shown once; hand it over securely (not by e-mail).</strong>
-    <code>{{ i.password }}</code>
-    <button class="btn" type="button" (click)="issued.set(null)">I have copied it</button>
-  </div>
+<div class="card secret" role="status">
+  <strong>Temporary password for {{ i.username }}. Shown once; hand it over securely (not by e-mail).</strong>
+  <code>{{ i.password }}</code>
+  <button (click)="issued.set(null)" class="btn" type="button">I have copied it</button>
+</div>
 }
 
-<app-load-state [loading]="users.isLoading()" [error]="users.error()" [empty]="users.hasValue() && users.value().length === 0"
-                what="local accounts" emptyText="No local accounts yet." (retry)="users.reload()" />
+<app-load-state (retry)="users.reload()" [empty]="users.hasValue() && users.value().length === 0"
+                [error]="users.error()"
+                [loading]="users.isLoading()" emptyText="No local accounts yet." what="local accounts"/>
 @if (users.value().length) {
-  <div class="table-wrap">
-    <table class="data" aria-label="Local accounts">
-      <thead>
-        <tr><th>User</th><th>Role</th><th>Status</th><th>Last sign-in</th><th>Password changed</th><th>Created</th><th>Actions</th></tr>
-      </thead>
-      <tbody>
-        @for (x of users.value(); track x.id) {
-          <tr>
-            <td><strong>{{ x.username }}</strong><div class="muted">{{ x.displayName }}{{ x.email ? ' · ' + x.email : '' }}</div></td>
-            <td>
-              <select class="role-select" [value]="topRole(x)" [disabled]="isSelf(x)" [attr.aria-label]="'Role of ' + x.username"
-                      (change)="setRole(x, $any($event.target).value)">
-                @for (role of roleOptions; track role) {
-                  <option [value]="role" [selected]="role === topRole(x)">{{ role | titlecase }}</option>
-                }
-              </select>
-            </td>
-            <td>
-              @if (!x.enabled) {
-                <app-status-chip status="DOWN" text="Disabled" />
-              } @else if (x.locked) {
-                <app-status-chip status="WARN" text="Locked" />
-              } @else if (x.mustChangePassword) {
-                <app-status-chip status="PENDING" text="Must change password" />
-              } @else {
-                <app-status-chip status="OK" text="Active" />
-              }
-            </td>
-            <td [matTooltip]="(x.lastLoginAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(x.lastLoginAt) }}</td>
-            <td>{{ ago(x.passwordChangedAt) }}</td>
-            <td>{{ x.createdAt | date: 'dd MMM yyyy' }} <span class="muted">by {{ x.createdBy ?? '—' }}</span></td>
-            <td>
+<div class="table-wrap">
+  <table aria-label="Local accounts" class="data">
+    <thead>
+    <tr>
+      <th>User</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th>Last sign-in</th>
+      <th>Password changed</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for (x of users.value(); track x.id) {
+    <tr>
+      <td><strong>{{ x.username }}</strong>
+        <div class="muted">{{ x.displayName }}{{ x.email ? ' · ' + x.email : '' }}</div>
+      </td>
+      <td>
+        <select (change)="setRole(x, $any($event.target).value)" [attr.aria-label]="'Role of ' + x.username" [disabled]="isSelf(x)"
+                [value]="topRole(x)"
+                class="role-select">
+          @for (role of roleOptions; track role) {
+          <option [selected]="role === topRole(x)" [value]="role">{{ role | titlecase }}</option>
+          }
+        </select>
+      </td>
+      <td>
+        @if (!x.enabled) {
+        <app-status-chip status="DOWN" text="Disabled"/>
+        } @else if (x.locked) {
+        <app-status-chip status="WARN" text="Locked"/>
+        } @else if (x.mustChangePassword) {
+        <app-status-chip status="PENDING" text="Must change password"/>
+        } @else {
+        <app-status-chip status="OK" text="Active"/>
+        }
+      </td>
+      <td [matTooltip]="(x.lastLoginAt | date: 'dd MMM yyyy, HH:mm') ?? ''">{{ ago(x.lastLoginAt) }}</td>
+      <td>{{ ago(x.passwordChangedAt) }}</td>
+      <td>{{ x.createdAt | date: 'dd MMM yyyy' }} <span class="muted">by {{ x.createdBy ?? '—' }}</span></td>
+      <td>
               <span class="actions">
-                <button class="icon-btn" type="button" (click)="reset(x)" [disabled]="isSelf(x)"
-                        [matTooltip]="isSelf(x) ? 'Use Change password for your own account' : 'Reset password'" aria-label="Reset password"><mat-icon>lock_reset</mat-icon></button>
-                <button class="icon-btn" type="button" (click)="unlock(x)" [disabled]="!x.locked" matTooltip="Unlock" aria-label="Unlock"><mat-icon>lock_open</mat-icon></button>
-                <button class="icon-btn" type="button" (click)="toggle(x)" [disabled]="isSelf(x)"
-                        [matTooltip]="x.enabled ? 'Disable' : 'Enable'" [attr.aria-label]="x.enabled ? 'Disable' : 'Enable'">
+                <button (click)="reset(x)" [disabled]="isSelf(x)" [matTooltip]="isSelf(x) ? 'Use Change password for your own account' : 'Reset password'" aria-label="Reset password"
+                        class="icon-btn"
+                        type="button"><mat-icon>lock_reset</mat-icon></button>
+                <button (click)="unlock(x)" [disabled]="!x.locked" aria-label="Unlock" class="icon-btn" matTooltip="Unlock"
+                        type="button"><mat-icon>lock_open</mat-icon></button>
+                <button (click)="toggle(x)" [attr.aria-label]="x.enabled ? 'Disable' : 'Enable'" [disabled]="isSelf(x)" [matTooltip]="x.enabled ? 'Disable' : 'Enable'"
+                        class="icon-btn"
+                        type="button">
                   <mat-icon>{{ x.enabled ? 'person_off' : 'person_check' }}</mat-icon>
                 </button>
               </span>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+      </td>
+    </tr>
+    }
+    </tbody>
+  </table>
+</div>
 }

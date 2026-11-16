@@ -59,10 +59,15 @@ export function ageDays(p: PullRequestInfo): number {
 
 export function inBucket(days: number, bucket: AgeBucket): boolean {
   switch (bucket) {
-    case '0-2': return days < 2;
-    case '2-7': return days >= 2 && days < 7;
-    case '7-14': return days >= 7 && days < 14;
-    case '14+': return days >= 14;
-    case '7+': return days >= 7;
+    case '0-2':
+      return days < 2;
+    case '2-7':
+      return days >= 2 && days < 7;
+    case '7-14':
+      return days >= 7 && days < 14;
+    case '14+':
+      return days >= 14;
+    case '7+':
+      return days >= 7;
   }
 }

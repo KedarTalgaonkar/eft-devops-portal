@@ -2,8 +2,9 @@ package com.euronet.eft.portal.security.audit;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Set;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.util.Set;
 
 /**
  * Audits every change made through the API (POST / PUT / PATCH / DELETE), with the HTTP status as outcome.

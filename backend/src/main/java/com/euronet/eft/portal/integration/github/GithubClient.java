@@ -5,9 +5,12 @@ import com.euronet.eft.portal.integration.github.GithubModels.CommitActivity;
 import com.euronet.eft.portal.integration.github.GithubModels.PullRequestInfo;
 import com.euronet.eft.portal.integration.github.GithubModels.RepositoryInfo;
 import com.euronet.eft.portal.integration.github.GithubModels.TeamSummary;
+
 import java.util.List;
 
-/** Team-wise repositories, commit activity and pull requests. Live client: phase 2 (REST/GraphQL with a token). */
+/**
+ * Team-wise repositories, commit activity and pull requests. Live client: phase 2 (REST/GraphQL with a token).
+ */
 public interface GithubClient extends IntegrationHealth {
 
     List<TeamSummary> teams();
@@ -16,6 +19,8 @@ public interface GithubClient extends IntegrationHealth {
 
     CommitActivity commits(String repository, int days);
 
-    /** @param state open, closed or all */
+    /**
+     * @param state open, closed or all
+     */
     List<PullRequestInfo> pullRequests(String state);
 }

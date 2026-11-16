@@ -23,8 +23,23 @@ import { errorMessage } from '../core/api';
     }
   `,
   styles: `
-    .error { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--bad); background: var(--bad-soft); }
-    .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px; color: var(--app-muted); text-align: center; }
+    .error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--bad);
+      background: var(--bad-soft);
+    }
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 28px;
+      color: var(--app-muted);
+      text-align: center;
+    }
   `,
 })
 export class LoadState {

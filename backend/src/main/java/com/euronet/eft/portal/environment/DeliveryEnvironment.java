@@ -5,9 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 
-/** A delivery environment (DEVELOP, SIT, UAT, PERF, PROD, ...). Rows are added automatically on import. */
+/**
+ * A delivery environment (DEVELOP, SIT, UAT, PERF, PROD, ...). Rows are added automatically on import.
+ */
 @Entity
 @Table(name = "environment")
 public class DeliveryEnvironment {

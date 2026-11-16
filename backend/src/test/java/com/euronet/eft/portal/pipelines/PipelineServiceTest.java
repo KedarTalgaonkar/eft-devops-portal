@@ -1,10 +1,5 @@
 package com.euronet.eft.portal.pipelines;
 
-import static com.euronet.eft.portal.pipelines.BuildStatsTest.build;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.euronet.eft.portal.environment.EnvironmentCatalog;
 import com.euronet.eft.portal.integration.jenkins.BuildResult;
 import com.euronet.eft.portal.integration.jenkins.JenkinsBuild;
@@ -14,19 +9,36 @@ import com.euronet.eft.portal.inventory.Deployment;
 import com.euronet.eft.portal.inventory.InventoryService;
 import com.euronet.eft.portal.inventory.JenkinsJobNaming;
 import com.euronet.eft.portal.pipelines.PipelineDtos.PipelineMetric;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
+
+import static com.euronet.eft.portal.pipelines.BuildStatsTest.build;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class PipelineServiceTest {
 
     private final InventoryService inventory = mock(InventoryService.class);
     private final JenkinsBuildCache builds = mock(JenkinsBuildCache.class);
     private PipelineService service;
+
+    private static Application app(long id, String name, String client) {
+        Application a = new Application(name, client, "owner");
+        ReflectionTestUtils.setField(a, "id", id);
+        return a;
+    }
+
+    private static JenkinsBuild at(JenkinsBuild b, Instant started) {
+        return new JenkinsBuild(b.job(), b.number(), b.result(), started, b.duration(), b.triggeredBy(), b.version(),
+            b.deployment(), b.url());
+    }
 
     @BeforeEach
     void setUp() {
@@ -38,15 +50,15 @@ class PipelineServiceTest {
         Deployment reconSit = recon.addDeployment(new Deployment("SIT", "recon"));
         reconSit.setJenkinsJob("EFT/recon-sit-deploy");                          // explicit job wins over the pattern
         when(inventory.allDeployments()).thenReturn(List.of(qrSit1, qr.getDeployments().get(1),
-                qr.getDeployments().get(2), reconSit));
+            qr.getDeployments().get(2), reconSit));
 
         Instant now = Instant.now();
         when(builds.builds("prepaid-qr-SIT")).thenReturn(List.of(
-                at(build(5, BuildResult.IN_PROGRESS), now),
-                at(build(4, BuildResult.SUCCESS), now.minus(Duration.ofDays(1))),
-                at(build(3, BuildResult.FAILURE), now.minus(Duration.ofDays(2))),
-                at(build(2, BuildResult.ABORTED), now.minus(Duration.ofDays(3))),
-                at(build(1, BuildResult.SUCCESS), now.minus(Duration.ofDays(40))))); // outside 30 days
+            at(build(5, BuildResult.IN_PROGRESS), now),
+            at(build(4, BuildResult.SUCCESS), now.minus(Duration.ofDays(1))),
+            at(build(3, BuildResult.FAILURE), now.minus(Duration.ofDays(2))),
+            at(build(2, BuildResult.ABORTED), now.minus(Duration.ofDays(3))),
+            at(build(1, BuildResult.SUCCESS), now.minus(Duration.ofDays(40))))); // outside 30 days
         when(builds.builds("prepaid-qr-UAT")).thenReturn(List.of());
         when(builds.builds("EFT/recon-sit-deploy")).thenThrow(new IllegalStateException("Jenkins down"));
 
@@ -60,10 +72,10 @@ class PipelineServiceTest {
         List<PipelineMetric> rows = service.metrics(null, 30);
 
         assertThat(rows).extracting(PipelineMetric::project, PipelineMetric::environment, PipelineMetric::jenkinsJob)
-                .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("Prepaid QR", "SIT", "prepaid-qr-SIT"),
-                        org.assertj.core.groups.Tuple.tuple("Prepaid QR", "UAT", "prepaid-qr-UAT"),
-                        org.assertj.core.groups.Tuple.tuple("Recon", "SIT", "EFT/recon-sit-deploy"));
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("Prepaid QR", "SIT", "prepaid-qr-SIT"),
+                org.assertj.core.groups.Tuple.tuple("Prepaid QR", "UAT", "prepaid-qr-UAT"),
+                org.assertj.core.groups.Tuple.tuple("Recon", "SIT", "EFT/recon-sit-deploy"));
 
         PipelineMetric qrSit = rows.getFirst();
         assertThat(qrSit.totalBuilds()).isEqualTo(4);
@@ -92,16 +104,5 @@ class PipelineServiceTest {
     void deploymentHistoryHasOnlySuccessfulDeploysNewestFirst() {
         var history = service.deploymentHistory("SIT", 30, 10);
         assertThat(history).extracting(e -> e.buildNumber()).containsExactly(4);
-    }
-
-    private static Application app(long id, String name, String client) {
-        Application a = new Application(name, client, "owner");
-        ReflectionTestUtils.setField(a, "id", id);
-        return a;
-    }
-
-    private static JenkinsBuild at(JenkinsBuild b, Instant started) {
-        return new JenkinsBuild(b.job(), b.number(), b.result(), started, b.duration(), b.triggeredBy(), b.version(),
-                b.deployment(), b.url());
     }
 }

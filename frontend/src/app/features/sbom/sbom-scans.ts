@@ -14,24 +14,66 @@ import { ScanView, VulnerabilityView } from './sbom.models';
   template: `
     @if (canScan) {
       <form class="filters" (submit)="$event.preventDefault(); run(project.value, version.value)">
-        <input #project class="search" placeholder="Project, e.g. prepaid-qr-api" aria-label="Project" required maxlength="200" />
-        <input #version class="search" placeholder="Version, e.g. 1.4.2" aria-label="Version" required maxlength="100" />
-        <button class="btn primary" type="submit" [disabled]="scanning()">{{ scanning() ? 'Scanning…' : 'Generate SBOM & scan' }}</button>
+        <input
+          #project
+          class="search"
+          placeholder="Project, e.g. prepaid-qr-api"
+          aria-label="Project"
+          required
+          maxlength="200"
+        />
+        <input
+          #version
+          class="search"
+          placeholder="Version, e.g. 1.4.2"
+          aria-label="Version"
+          required
+          maxlength="100"
+        />
+        <button class="btn primary" type="submit" [disabled]="scanning()">
+          {{ scanning() ? 'Scanning…' : 'Generate SBOM & scan' }}
+        </button>
       </form>
     }
 
-    <app-load-state [loading]="scans.isLoading()" [error]="scans.error()" [empty]="scans.hasValue() && scans.value().length === 0"
-                    what="scans" emptyText="No scans yet. Enter a project and version above." (retry)="scans.reload()" />
+    <app-load-state
+      [loading]="scans.isLoading()"
+      [error]="scans.error()"
+      [empty]="scans.hasValue() && scans.value().length === 0"
+      what="scans"
+      emptyText="No scans yet. Enter a project and version above."
+      (retry)="scans.reload()"
+    />
     @if (scans.value().length) {
       <div class="table-wrap">
         <table class="data" aria-label="SBOM scans">
-          <thead><tr><th>Scanned</th><th>Project</th><th>Version</th><th>Format</th><th class="num">Components</th>
-            <th class="num">Critical</th><th class="num">High</th><th class="num">Medium</th><th class="num">Low</th><th>Status</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Scanned</th>
+              <th>Project</th>
+              <th>Version</th>
+              <th>Format</th>
+              <th class="num">Components</th>
+              <th class="num">Critical</th>
+              <th class="num">High</th>
+              <th class="num">Medium</th>
+              <th class="num">Low</th>
+              <th>Status</th>
+            </tr>
+          </thead>
           <tbody>
             @for (s of scans.value(); track s.id) {
-              <tr class="clickable" tabindex="0" [class.selected]="s.id === selected()" (click)="selected.set(s.id)" (keydown.enter)="selected.set(s.id)">
+              <tr
+                class="clickable"
+                tabindex="0"
+                [class.selected]="s.id === selected()"
+                (click)="selected.set(s.id)"
+                (keydown.enter)="selected.set(s.id)"
+              >
                 <td>{{ s.scannedAt | date: 'dd MMM yyyy, HH:mm' }}</td>
-                <td><strong>{{ s.projectName }}</strong></td>
+                <td>
+                  <strong>{{ s.projectName }}</strong>
+                </td>
                 <td class="mono">{{ s.projectVersion }}</td>
                 <td>{{ s.format }}</td>
                 <td class="num">{{ s.componentCount }}</td>
@@ -49,19 +91,44 @@ import { ScanView, VulnerabilityView } from './sbom.models';
 
     @if (selectedScan(); as s) {
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Findings · {{ s.projectName }} {{ s.projectVersion }}</h2>
-          <span class="section-sub">Most severe first · upgrade to the "Fixed in" version</span></div>
-        <app-load-state [loading]="vulns.isLoading()" [error]="vulns.error()" [empty]="vulns.hasValue() && vulns.value().length === 0"
-                        what="findings" emptyText="No known vulnerabilities in this SBOM." (retry)="vulns.reload()" />
+        <div class="section-head">
+          <h2 class="section-title">Findings · {{ s.projectName }} {{ s.projectVersion }}</h2>
+          <span class="section-sub">Most severe first · upgrade to the "Fixed in" version</span>
+        </div>
+        <app-load-state
+          [loading]="vulns.isLoading()"
+          [error]="vulns.error()"
+          [empty]="vulns.hasValue() && vulns.value().length === 0"
+          what="findings"
+          emptyText="No known vulnerabilities in this SBOM."
+          (retry)="vulns.reload()"
+        />
         @if (vulns.hasValue() && vulns.value().length) {
           <div class="table-wrap">
             <table class="data" aria-label="Findings">
-              <thead><tr><th>Severity</th><th>ID</th><th>Component</th><th>Version</th><th>Fixed in</th><th>Title</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>ID</th>
+                  <th>Component</th>
+                  <th>Version</th>
+                  <th>Fixed in</th>
+                  <th>Title</th>
+                </tr>
+              </thead>
               <tbody>
                 @for (v of vulns.value(); track v.vulnId + v.component) {
                   <tr>
                     <td><app-status-chip [status]="v.severity" /></td>
-                    <td><a class="mono" [href]="'https://nvd.nist.gov/vuln/detail/' + v.vulnId" target="_blank" rel="noopener">{{ v.vulnId }}</a></td>
+                    <td>
+                      <a
+                        class="mono"
+                        [href]="'https://nvd.nist.gov/vuln/detail/' + v.vulnId"
+                        target="_blank"
+                        rel="noopener"
+                        >{{ v.vulnId }}</a
+                      >
+                    </td>
                     <td class="mono">{{ v.component }}</td>
                     <td class="mono">{{ v.version ?? '—' }}</td>
                     <td class="mono ok">{{ v.fixedVersion ?? '—' }}</td>
@@ -77,30 +144,38 @@ import { ScanView, VulnerabilityView } from './sbom.models';
   `,
 })
 export class SbomScansPage {
-  private readonly http = inject(HttpClient);
-  protected readonly canScan = inject(Auth).can('EDITOR');
   readonly scan = input<string>();
-  protected readonly selected = linkedSignal<number | null>(() => (this.scan() ? Number(this.scan()) : null));
+  protected readonly canScan = inject(Auth).can('EDITOR');
+  protected readonly selected = linkedSignal<number | null>(() =>
+    this.scan() ? Number(this.scan()) : null,
+  );
   protected readonly scanning = signal(false);
-  protected readonly scans = httpResource<ScanView[]>(() => apiUrl('sbom/scans'), { defaultValue: [] });
+  protected readonly scans = httpResource<ScanView[]>(() => apiUrl('sbom/scans'), {
+    defaultValue: [],
+  });
   protected readonly vulns = httpResource<VulnerabilityView[]>(() => {
     const id = this.selected();
     return id === null ? undefined : apiUrl(`sbom/scans/${id}/vulnerabilities`);
   });
-  protected readonly selectedScan = computed(() => this.scans.value().find((s) => s.id === this.selected()));
+  protected readonly selectedScan = computed(() =>
+    this.scans.value().find((s) => s.id === this.selected()),
+  );
+  private readonly http = inject(HttpClient);
 
   protected run(project: string, version: string): void {
     if (!project.trim() || !version.trim()) {
       return;
     }
     this.scanning.set(true);
-    this.http.post<ScanView>(apiUrl('sbom/scans'), { projectName: project, projectVersion: version }).subscribe({
-      next: (s) => {
-        this.scanning.set(false);
-        this.scans.reload();
-        this.selected.set(s.id);
-      },
-      error: () => this.scanning.set(false),
-    });
+    this.http
+      .post<ScanView>(apiUrl('sbom/scans'), { projectName: project, projectVersion: version })
+      .subscribe({
+        next: (s) => {
+          this.scanning.set(false);
+          this.scans.reload();
+          this.selected.set(s.id);
+        },
+        error: () => this.scanning.set(false),
+      });
   }
 }

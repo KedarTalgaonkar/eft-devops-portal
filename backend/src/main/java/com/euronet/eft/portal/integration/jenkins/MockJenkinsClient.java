@@ -1,6 +1,9 @@
 package com.euronet.eft.portal.integration.jenkins;
 
 import com.euronet.eft.portal.integration.IntegrationStatus;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -8,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 /**
  * Generates believable build history for any job name. The same job always gets the same history
@@ -20,6 +21,20 @@ import org.springframework.stereotype.Component;
 public class MockJenkinsClient implements JenkinsClient {
 
     private static final String[] USERS = {"jenkins-scm", "narsing", "shweta", "deepak", "ganesh", "samar", "timer"};
+
+    private static BuildResult pick(Random random) {
+        double p = random.nextDouble();
+        if (p < 0.72) {
+            return BuildResult.SUCCESS;
+        }
+        if (p < 0.86) {
+            return BuildResult.FAILURE;
+        }
+        if (p < 0.95) {
+            return BuildResult.ABORTED;
+        }
+        return BuildResult.UNSTABLE;
+    }
 
     @Override
     public List<JenkinsBuild> builds(String job, int limit) {
@@ -43,24 +58,10 @@ public class MockJenkinsClient implements JenkinsClient {
             Duration duration = Duration.ofSeconds(90 + random.nextInt(18 * 60));
             String version = "1." + (number / 10) + "." + (number % 10);
             builds.add(new JenkinsBuild(job, number, result, starts.get(i), duration,
-                    USERS[random.nextInt(USERS.length)], version, result == BuildResult.SUCCESS,
-                    "https://jenkins.example.internal/job/" + job + "/" + number + "/"));
+                USERS[random.nextInt(USERS.length)], version, result == BuildResult.SUCCESS,
+                "https://jenkins.example.internal/job/" + job + "/" + number + "/"));
         }
         return builds.reversed().stream().limit(limit).toList();
-    }
-
-    private static BuildResult pick(Random random) {
-        double p = random.nextDouble();
-        if (p < 0.72) {
-            return BuildResult.SUCCESS;
-        }
-        if (p < 0.86) {
-            return BuildResult.FAILURE;
-        }
-        if (p < 0.95) {
-            return BuildResult.ABORTED;
-        }
-        return BuildResult.UNSTABLE;
     }
 
     @Override

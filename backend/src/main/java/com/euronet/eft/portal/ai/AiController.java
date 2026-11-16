@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * AI features. Reading is open to every signed-in user; asking for a build explanation and voting too (within the
@@ -57,8 +58,8 @@ public class AiController {
     public ResponseEntity<BuildExplanation> explanation(@PathVariable long applicationId, @PathVariable String env,
                                                         @PathVariable int number) {
         return builds.find(applicationId, EnvironmentCodes.require(env), number)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.noContent().build());
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/builds/{applicationId}/{env}/{number}/explain")
@@ -86,9 +87,6 @@ public class AiController {
         return digests.generateNow();
     }
 
-    public record Vote(@Min(-1) @Max(1) int vote) {
-    }
-
     @PostMapping("/insights/{id}/feedback")
     @Operation(summary = "Rate an AI answer: 1 helpful, -1 not helpful, 0 withdraw")
     public Stored<?> feedback(@PathVariable long id, @RequestBody Vote vote) {
@@ -102,5 +100,8 @@ public class AiController {
             default -> throw new AiException(HttpStatus.BAD_REQUEST, "Unknown AI result type");
         };
         return insights.vote(id, vote.vote(), CurrentUser.nameOrSystem(), type);
+    }
+
+    public record Vote(@Min(-1) @Max(1) int vote) {
     }
 }

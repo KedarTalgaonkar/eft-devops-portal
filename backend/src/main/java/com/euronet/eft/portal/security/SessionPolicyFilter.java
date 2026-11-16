@@ -5,11 +5,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Session rules on top of the idle timeout:
@@ -30,7 +31,7 @@ final class SessionPolicyFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
+        throws ServletException, IOException {
         CurrentUser user = CurrentUser.current();
         HttpSession session = request.getSession(false);
         if (user != null && session != null) {
@@ -39,13 +40,13 @@ final class SessionPolicyFilter extends OncePerRequestFilter {
                 session.invalidate();
                 SecurityContextHolder.clearContext();
                 JsonErrors.write(response, 401, "Unauthorized", "SESSION_EXPIRED",
-                        "Your session has expired. Please sign in again.", request.getRequestURI());
+                    "Your session has expired. Please sign in again.", request.getRequestURI());
                 return;
             }
             String uri = request.getRequestURI();
             if (user.mustChangePassword() && uri.startsWith("/api/") && !uri.startsWith("/api/auth/")) {
                 JsonErrors.write(response, 403, "Forbidden", "PASSWORD_CHANGE_REQUIRED",
-                        "Change your temporary password before continuing.", uri);
+                    "Change your temporary password before continuing.", uri);
                 return;
             }
         }

@@ -9,7 +9,7 @@ import { Auth, PortalRole } from '../../core/auth';
 import { ago } from '../../core/models';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
-import { LocalUserView, generateTemporaryPassword } from './admin.models';
+import { generateTemporaryPassword, LocalUserView } from './admin.models';
 
 /**
  * Local (database) accounts: create with a temporary password, change roles, enable / disable, unlock, reset.
@@ -20,36 +20,107 @@ import { LocalUserView, generateTemporaryPassword } from './admin.models';
   imports: [DatePipe, TitleCasePipe, MatIconModule, MatTooltipModule, LoadState, StatusChip],
   templateUrl: './admin-users.html',
   styles: `
-    .create { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
-    .create label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
-    .field { height: 38px; padding: 0 10px; border: 1px solid var(--app-line-strong); border-radius: 10px; font: inherit; font-weight: 400; }
-    .roles { display: flex; gap: 6px; flex-wrap: wrap; }
-    .secret { display: flex; flex-direction: column; gap: 6px; background: var(--warn-soft); color: var(--warn); }
-    .secret code { font-family: var(--font-mono); font-size: 16px; color: var(--app-text); background: #fff; padding: 6px 10px; border-radius: 8px; user-select: all; }
-    .actions { display: flex; gap: 4px; }
-    .icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--app-line); border-radius: 8px; background: #fff; cursor: pointer; color: var(--app-muted); }
-    .icon-btn:hover:not(:disabled) { color: var(--eu-navy-600); border-color: var(--eu-navy-400); }
-    .icon-btn:disabled { opacity: .4; cursor: default; }
-    .icon-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .role-select { height: 32px; border: 1px solid var(--app-line-strong); border-radius: 8px; font: inherit; }
+    .create {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      align-items: end;
+    }
+    .create label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .field {
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--app-line-strong);
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 400;
+    }
+    .roles {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .secret {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+    .secret code {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--app-text);
+      background: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      user-select: all;
+    }
+    .actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--app-line);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      color: var(--app-muted);
+    }
+    .icon-btn:hover:not(:disabled) {
+      color: var(--eu-navy-600);
+      border-color: var(--eu-navy-400);
+    }
+    .icon-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .icon-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .role-select {
+      height: 32px;
+      border: 1px solid var(--app-line-strong);
+      border-radius: 8px;
+      font: inherit;
+    }
   `,
 })
 export class AdminUsersPage {
-  private readonly http = inject(HttpClient);
-  private readonly snackBar = inject(MatSnackBar);
   protected readonly auth = inject(Auth);
   protected readonly ago = ago;
   protected readonly roleOptions: PortalRole[] = ['VIEWER', 'EDITOR', 'ADMIN'];
-
-  protected readonly users = httpResource<LocalUserView[]>(() => apiUrl('admin/users'), { defaultValue: [] });
+  protected readonly users = httpResource<LocalUserView[]>(() => apiUrl('admin/users'), {
+    defaultValue: [],
+  });
   protected readonly issued = signal<{ username: string; password: string } | null>(null);
   protected readonly busy = signal(false);
+  private readonly http = inject(HttpClient);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected create(username: string, displayName: string, email: string, role: string): void {
     const password = generateTemporaryPassword();
     this.busy.set(true);
     this.http
-      .post<LocalUserView>(apiUrl('admin/users'), { username, displayName, email, roles: [role], temporaryPassword: password })
+      .post<LocalUserView>(apiUrl('admin/users'), {
+        username,
+        displayName,
+        email,
+        roles: [role],
+        temporaryPassword: password,
+      })
       .subscribe({
         next: (u) => {
           this.busy.set(false);
@@ -65,7 +136,11 @@ export class AdminUsersPage {
   }
 
   protected toggle(u: LocalUserView): void {
-    this.update(u, { enabled: !u.enabled }, `${u.username} ${u.enabled ? 'disabled; sessions ended' : 'enabled'}`);
+    this.update(
+      u,
+      { enabled: !u.enabled },
+      `${u.username} ${u.enabled ? 'disabled; sessions ended' : 'enabled'}`,
+    );
   }
 
   protected unlock(u: LocalUserView): void {
@@ -77,10 +152,12 @@ export class AdminUsersPage {
 
   protected reset(u: LocalUserView): void {
     const password = generateTemporaryPassword();
-    this.http.post(apiUrl(`admin/users/${u.id}/reset-password`), { temporaryPassword: password }).subscribe(() => {
-      this.issued.set({ username: u.username, password });
-      this.users.reload();
-    });
+    this.http
+      .post(apiUrl(`admin/users/${u.id}/reset-password`), { temporaryPassword: password })
+      .subscribe(() => {
+        this.issued.set({ username: u.username, password });
+        this.users.reload();
+      });
   }
 
   protected isSelf(u: LocalUserView): boolean {

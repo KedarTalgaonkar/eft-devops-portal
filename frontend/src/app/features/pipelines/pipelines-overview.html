@@ -1,36 +1,41 @@
-<app-load-state [loading]="insights.isLoading()" [error]="insights.error()" what="delivery insights" (retry)="insights.reload()" />
+<app-load-state (retry)="insights.reload()" [error]="insights.error()" [loading]="insights.isLoading()"
+                what="delivery insights"/>
 
 @if (insights.hasValue()) {
-  @let i = insights.value();
-  <app-card-group heading="Key metrics" icon="rocket_launch"
-                  [description]="'Last ' + i.days + ' days compared with the ' + i.days + ' days before; the arrow shows the change.'">
-  <section class="grid" aria-label="Delivery KPIs">
-    <app-kpi-card label="Build success" icon="verified" unit="%" deltaMode="pts"
-                  [value]="i.successRate.current" [current]="i.successRate.current" [previous]="i.successRate.previous"
-                  [tone]="rateTone(i.successRate.current)" [trend]="ratePerDay()"
-                  hint="Share of finished builds that passed" link="../all" linkHint="Open pipeline metrics" />
-    <app-kpi-card label="Deployments / day" icon="rocket_launch"
-                  [value]="i.deploymentsPerDay.current" [current]="i.deploymentsPerDay.current" [previous]="i.deploymentsPerDay.previous"
-                  tone="info" [trend]="deploysPerDay()" hint="Successful deploy builds per day" link="../deployments" linkHint="Open deployment history" />
-    <app-kpi-card label="Mean time to recover" icon="healing" unit="h" [higherIsBetter]="false"
-                  [value]="i.meanTimeToRecoverHours.current" [current]="i.meanTimeToRecoverHours.current"
-                  [previous]="i.meanTimeToRecoverHours.previous" hint="From first failure to the next green build"
-                  link="../all" [query]="{ failing: 1 }" linkHint="Show pipelines with failures" />
-    <app-kpi-card label="Pipelines failing now" icon="error" [value]="i.redPipelines + ' / ' + i.pipelines"
-                  [tone]="i.redPipelines ? 'bad' : 'ok'" hint="Latest finished build failed"
-                  link="../all" [query]="{ failing: 'now' }" linkHint="Show pipelines whose latest build failed" />
-    <app-kpi-card label="Total builds" icon="build"
-                  [value]="i.totalBuilds.current" [current]="i.totalBuilds.current" [previous]="i.totalBuilds.previous"
-                  [trend]="buildsPerDay()" [hint]="'Average ' + (i.averageBuildMinutes.current ?? '—') + ' min per build'"
-                  link="../all" linkHint="Open pipeline metrics" />
+@let i = insights.value();
+<app-card-group [description]="'Last ' + i.days + ' days compared with the ' + i.days + ' days before; the arrow shows the change.'" heading="Key metrics"
+                icon="rocket_launch">
+  <section aria-label="Delivery KPIs" class="grid">
+    <app-kpi-card [current]="i.successRate.current" [previous]="i.successRate.previous" [tone]="rateTone(i.successRate.current)" [trend]="ratePerDay()"
+                  [value]="i.successRate.current" deltaMode="pts" hint="Share of finished builds that passed"
+                  icon="verified" label="Build success"
+                  link="../all" linkHint="Open pipeline metrics" unit="%"/>
+    <app-kpi-card [current]="i.deploymentsPerDay.current" [previous]="i.deploymentsPerDay.previous"
+                  [trend]="deploysPerDay()" [value]="i.deploymentsPerDay.current"
+                  hint="Successful deploy builds per day"
+                  icon="rocket_launch" label="Deployments / day" link="../deployments" linkHint="Open deployment history"
+                  tone="info"/>
+    <app-kpi-card [current]="i.meanTimeToRecoverHours.current" [higherIsBetter]="false" [previous]="i.meanTimeToRecoverHours.previous" [query]="{ failing: 1 }"
+                  [value]="i.meanTimeToRecoverHours.current" hint="From first failure to the next green build"
+                  icon="healing" label="Mean time to recover"
+                  link="../all" linkHint="Show pipelines with failures" unit="h"/>
+    <app-kpi-card [query]="{ failing: 'now' }" [tone]="i.redPipelines ? 'bad' : 'ok'" [value]="i.redPipelines + ' / ' + i.pipelines"
+                  hint="Latest finished build failed" icon="error"
+                  label="Pipelines failing now" link="../all" linkHint="Show pipelines whose latest build failed"/>
+    <app-kpi-card [current]="i.totalBuilds.current" [hint]="'Average ' + (i.averageBuildMinutes.current ?? '—') + ' min per build'"
+                  [previous]="i.totalBuilds.previous" [trend]="buildsPerDay()" [value]="i.totalBuilds.current"
+                  icon="build"
+                  label="Total builds"
+                  link="../all" linkHint="Open pipeline metrics"/>
   </section>
-  </app-card-group>
+</app-card-group>
 
-  <app-card-group heading="Build trends" icon="monitoring" description="Daily build results, and the pipelines that failed most often in this period.">
+<app-card-group description="Daily build results, and the pipelines that failed most often in this period." heading="Build trends"
+                icon="monitoring">
   <section class="grid-2">
     <div class="card">
       <div class="card-title">Builds per day · last {{ i.days }} days</div>
-      <app-stacked-bars [series]="series" [points]="points()" ariaLabel="Builds per day by result" />
+      <app-stacked-bars [points]="points()" [series]="series" ariaLabel="Builds per day by result"/>
     </div>
     <div class="card">
       <div class="section-head">
@@ -39,56 +44,59 @@
         <a class="link-more" routerLink="../all">All pipelines →</a>
       </div>
       @if (failingBars().length) {
-        <app-bar-list [items]="failingBars()" />
+      <app-bar-list [items]="failingBars()"/>
       } @else {
-        <div class="clear"><img src="/img/all-clear.svg" alt="" width="64" height="48" /> No failing pipelines in this period</div>
+      <div class="clear"><img alt="" height="48" src="/img/all-clear.svg" width="64"/> No failing pipelines in this
+        period
+      </div>
       }
     </div>
   </section>
-  </app-card-group>
+</app-card-group>
 
-  <app-card-group heading="By environment" icon="layers"
-                  description="Build success per environment. Click one to filter the whole page; new environments from the inventory appear automatically.">
-    <div class="env-cards">
-      @for (e of i.environments; track e.environment) {
-        <button type="button" class="card env" (click)="filters.env.set(e.environment)" [attr.aria-label]="'Filter on ' + e.environment">
+<app-card-group description="Build success per environment. Click one to filter the whole page; new environments from the inventory appear automatically." heading="By environment"
+                icon="layers">
+  <div class="env-cards">
+    @for (e of i.environments; track e.environment) {
+    <button (click)="filters.env.set(e.environment)" [attr.aria-label]="'Filter on ' + e.environment" class="card env"
+            type="button">
           <span class="name">
             {{ envs.name(e.environment) }}
             @if (e.redPipelines) {
-              <app-status-chip status="FAILURE" [text]="e.redPipelines + ' failing'" />
+              <app-status-chip [text]="e.redPipelines + ' failing'" status="FAILURE"/>
             } @else {
-              <app-status-chip status="SUCCESS" text="Green" />
+              <app-status-chip status="SUCCESS" text="Green"/>
             }
           </span>
-          <span class="rate" [class]="'rate ' + rateTone(e.successRate)">{{ e.successRate ?? '—' }}%</span>
-          <span class="muted">{{ e.pipelines }} pipelines · {{ e.totalBuilds }} builds</span>
-        </button>
-      }
-    </div>
-  </app-card-group>
+      <span [class]="'rate ' + rateTone(e.successRate)" class="rate">{{ e.successRate ?? '—' }}%</span>
+      <span class="muted">{{ e.pipelines }} pipelines · {{ e.totalBuilds }} builds</span>
+    </button>
+    }
+  </div>
+</app-card-group>
 
-  <app-card-group heading="Needs attention" icon="build_circle" link="../all" linkLabel="Open pipeline metrics"
-                  description="Pipelines that are failing now or fail often, with owner and job, for support teams to pick up.">
+<app-card-group description="Pipelines that are failing now or fail often, with owner and job, for support teams to pick up." heading="Needs attention" icon="build_circle" link="../all"
+                linkLabel="Open pipeline metrics">
   <section class="card">
     @if (i.problems.length) {
-      <ul class="problems">
-        @for (p of i.problems; track p.jenkinsJob) {
-          <li>
-            <app-status-chip [status]="p.red ? 'FAILURE' : 'UNSTABLE'" [text]="p.red ? 'Failing' : 'Flaky'" />
-            <div>
-              <div class="title">{{ p.project }} · {{ p.client }} · {{ envs.name(p.environment) }}</div>
-              <div class="meta">
-                {{ p.failed }} failed of {{ p.totalBuilds }} builds · last failure {{ ago(p.lastFailureAt) }} ·
-                owner {{ p.owner ?? '—' }} · job <span class="mono">{{ p.jenkinsJob }}</span>
-              </div>
-            </div>
-            <a class="btn" [routerLink]="'../all'" [queryParams]="{ q: p.project }">Investigate</a>
-          </li>
-        }
-      </ul>
+    <ul class="problems">
+      @for (p of i.problems; track p.jenkinsJob) {
+      <li>
+        <app-status-chip [status]="p.red ? 'FAILURE' : 'UNSTABLE'" [text]="p.red ? 'Failing' : 'Flaky'"/>
+        <div>
+          <div class="title">{{ p.project }} · {{ p.client }} · {{ envs.name(p.environment) }}</div>
+          <div class="meta">
+            {{ p.failed }} failed of {{ p.totalBuilds }} builds · last failure {{ ago(p.lastFailureAt) }} ·
+            owner {{ p.owner ?? '—' }} · job <span class="mono">{{ p.jenkinsJob }}</span>
+          </div>
+        </div>
+        <a [queryParams]="{ q: p.project }" [routerLink]="'../all'" class="btn">Investigate</a>
+      </li>
+      }
+    </ul>
     } @else {
-      <div class="clear"><img src="/img/all-clear.svg" alt="" width="64" height="48" /> Nothing needs attention</div>
+    <div class="clear"><img alt="" height="48" src="/img/all-clear.svg" width="64"/> Nothing needs attention</div>
     }
   </section>
-  </app-card-group>
+</app-card-group>
 }

@@ -6,11 +6,6 @@ import com.euronet.eft.portal.security.oidc.PortalOidcUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -53,6 +48,12 @@ import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Backend-for-frontend security: the browser never sees an OAuth token. Sign-in is OIDC (Microsoft Entra ID, PKCE,
  * signed and issuer-checked ID token) or a local account; both end in an HttpOnly, SameSite session cookie whose
@@ -67,9 +68,20 @@ public class SecurityConfig {
     @Bean
     static RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""
-                ROLE_ADMIN > ROLE_EDITOR
-                ROLE_EDITOR > ROLE_VIEWER
-                """);
+            ROLE_ADMIN > ROLE_EDITOR
+            ROLE_EDITOR > ROLE_VIEWER
+            """);
+    }
+
+    private static void onSsoSuccess(HttpServletRequest request, HttpServletResponse response, Authentication auth,
+                                     AuditService audit) throws IOException {
+        HttpSession session = request.getSession();
+        session.setAttribute(SessionPolicyFilter.AUTHENTICATED_AT, Instant.now());
+        Object returnTo = session.getAttribute(RETURN_TO);
+        session.removeAttribute(RETURN_TO);
+        CurrentUser user = CurrentUser.from(auth);
+        audit.record(user.username(), "SSO", "LOGIN", user.username(), "SUCCESS", "roles " + user.roleNames());
+        response.sendRedirect(SafeRedirects.relativeOrRoot(returnTo == null ? null : returnTo.toString()));
     }
 
     @Bean
@@ -95,14 +107,18 @@ public class SecurityConfig {
         return repo;
     }
 
-    /** Used by the local login endpoint: new session id (fixation protection) and a fresh CSRF token. */
+    /**
+     * Used by the local login endpoint: new session id (fixation protection) and a fresh CSRF token.
+     */
     @Bean
     SessionAuthenticationStrategy sessionAuthenticationStrategy(CsrfTokenRepository csrf) {
         return new CompositeSessionAuthenticationStrategy(List.of(
-                new ChangeSessionIdAuthenticationStrategy(), new CsrfAuthenticationStrategy(csrf)));
+            new ChangeSessionIdAuthenticationStrategy(), new CsrfAuthenticationStrategy(csrf)));
     }
 
-    /** Local accounts only: BCrypt check, disabled / locked accounts refused, unknown users timed like known ones. */
+    /**
+     * Local accounts only: BCrypt check, disabled / locked accounts refused, unknown users timed like known ones.
+     */
     @Bean
     AuthenticationManager localAuthenticationManager(LocalUserService users, PasswordEncoder encoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(users);
@@ -112,7 +128,9 @@ public class SecurityConfig {
         return manager;
     }
 
-    /** ID-token validation: signature, expiry, audience, nonce and issuer (explicit when discovery is not used). */
+    /**
+     * ID-token validation: signature, expiry, audience, nonce and issuer (explicit when discovery is not used).
+     */
     @Bean
     JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(SecurityProperties props) {
         OidcIdTokenDecoderFactory factory = new OidcIdTokenDecoderFactory();
@@ -123,7 +141,7 @@ public class SecurityConfig {
             String expected = discovered != null ? discovered : props.oidc().expectedIssuer();
             if (expected == null || expected.isBlank()) {
                 throw new IllegalStateException("OIDC provider '" + registration.getRegistrationId()
-                        + "' has no issuer: set issuer-uri or portal.security.oidc.expected-issuer");
+                    + "' has no issuer: set issuer-uri or portal.security.oidc.expected-issuer");
             }
             validators.add(new JwtIssuerValidator(expected));
             return new DelegatingOAuth2TokenValidator<>(validators);
@@ -136,72 +154,61 @@ public class SecurityConfig {
                                             SecurityContextRepository contextRepository, AuditService audit,
                                             ObjectProvider<ClientRegistrationRepository> registrations) throws Exception {
         http
-                .securityContext(c -> c.securityContextRepository(contextRepository))
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).sessionFixation(f -> f.changeSessionId()))
-                .csrf(c -> c.csrfTokenRepository(csrf).csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
-                .cors(c -> c.disable())
-                .httpBasic(b -> b.disable())
-                .formLogin(f -> f.disable())
-                .logout(l -> l.disable())
-                .headers(h -> h
-                        .frameOptions(f -> f.deny())
-                        .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
-                .authorizeHttpRequests(a -> a
-                        // public: health checks, the session probe, sign-in entry points
-                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info", "/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/session", "/api/auth/sso").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
-                        // any signed-in user
-                        .requestMatchers("/api/auth/**").authenticated()
-                        // administrators
-                        .requestMatchers("/api/admin/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/environments/**").hasRole("ADMIN")
-                        // AI: any signed-in user may ask for a build explanation and rate answers (daily limit applies);
-                        // regenerating is checked in the service (EDITOR); writing a digest on demand is for administrators
-                        .requestMatchers(HttpMethod.POST, "/api/ai/digest").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/ai/builds/*/*/*/explain", "/api/ai/insights/*/feedback").hasRole("VIEWER")
-                        // editors change data, viewers read
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasRole("EDITOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("EDITOR")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasRole("EDITOR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("EDITOR")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasRole("VIEWER")
-                        .anyRequest().denyAll())
-                .exceptionHandling(e -> e
-                        .authenticationEntryPoint((req, res, ex) -> JsonErrors.write(res, 401, "Unauthorized", "AUTHENTICATION_REQUIRED",
-                                "Sign in to continue.", req.getRequestURI()))
-                        .accessDeniedHandler((req, res, ex) -> JsonErrors.write(res, 403, "Forbidden", "ACCESS_DENIED",
-                                "You do not have permission for this action.", req.getRequestURI())))
-                .addFilterAfter(new SessionPolicyFilter(props.absoluteSessionTimeout()), ExceptionTranslationFilter.class);
+            .securityContext(c -> c.securityContextRepository(contextRepository))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED).sessionFixation(f -> f.changeSessionId()))
+            .csrf(c -> c.csrfTokenRepository(csrf).csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
+            .cors(c -> c.disable())
+            .httpBasic(b -> b.disable())
+            .formLogin(f -> f.disable())
+            .logout(l -> l.disable())
+            .headers(h -> h
+                .frameOptions(f -> f.deny())
+                .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
+            .authorizeHttpRequests(a -> a
+                // public: health checks, the session probe, sign-in entry points
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info", "/error").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/session", "/api/auth/sso").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
+                // any signed-in user
+                .requestMatchers("/api/auth/**").authenticated()
+                // administrators
+                .requestMatchers("/api/admin/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/environments/**").hasRole("ADMIN")
+                // AI: any signed-in user may ask for a build explanation and rate answers (daily limit applies);
+                // regenerating is checked in the service (EDITOR); writing a digest on demand is for administrators
+                .requestMatchers(HttpMethod.POST, "/api/ai/digest").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/ai/builds/*/*/*/explain", "/api/ai/insights/*/feedback").hasRole("VIEWER")
+                // editors change data, viewers read
+                .requestMatchers(HttpMethod.POST, "/api/**").hasRole("EDITOR")
+                .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("EDITOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/**").hasRole("EDITOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("EDITOR")
+                .requestMatchers(HttpMethod.GET, "/api/**").hasRole("VIEWER")
+                .anyRequest().denyAll())
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint((req, res, ex) -> JsonErrors.write(res, 401, "Unauthorized", "AUTHENTICATION_REQUIRED",
+                    "Sign in to continue.", req.getRequestURI()))
+                .accessDeniedHandler((req, res, ex) -> JsonErrors.write(res, 403, "Forbidden", "ACCESS_DENIED",
+                    "You do not have permission for this action.", req.getRequestURI())))
+            .addFilterAfter(new SessionPolicyFilter(props.absoluteSessionTimeout()), ExceptionTranslationFilter.class);
 
         ClientRegistrationRepository repository = registrations.getIfAvailable();
         if (repository != null) {
             DefaultOAuth2AuthorizationRequestResolver resolver =
-                    new DefaultOAuth2AuthorizationRequestResolver(repository, "/oauth2/authorization");
+                new DefaultOAuth2AuthorizationRequestResolver(repository, "/oauth2/authorization");
             resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
             http.oauth2Login(o -> o
-                    .loginPage("/login")
-                    .authorizationEndpoint(ae -> ae.authorizationRequestResolver(resolver))
-                    .userInfoEndpoint(u -> u.oidcUserService(new PortalOidcUserService(props)))
-                    .successHandler((req, res, auth) -> onSsoSuccess(req, res, auth, audit))
-                    .failureHandler((req, res, ex) -> {
-                        audit.record("unknown", "SSO", "LOGIN", props.registrationId(), "FAILURE", ex.getMessage());
-                        res.sendRedirect("/login?error=sso");
-                    }));
+                .loginPage("/login")
+                .authorizationEndpoint(ae -> ae.authorizationRequestResolver(resolver))
+                .userInfoEndpoint(u -> u.oidcUserService(new PortalOidcUserService(props)))
+                .successHandler((req, res, auth) -> onSsoSuccess(req, res, auth, audit))
+                .failureHandler((req, res, ex) -> {
+                    audit.record("unknown", "SSO", "LOGIN", props.registrationId(), "FAILURE", ex.getMessage());
+                    res.sendRedirect("/login?error=sso");
+                }));
         }
         return http.build();
-    }
-
-    private static void onSsoSuccess(HttpServletRequest request, HttpServletResponse response, Authentication auth,
-                                     AuditService audit) throws IOException {
-        HttpSession session = request.getSession();
-        session.setAttribute(SessionPolicyFilter.AUTHENTICATED_AT, Instant.now());
-        Object returnTo = session.getAttribute(RETURN_TO);
-        session.removeAttribute(RETURN_TO);
-        CurrentUser user = CurrentUser.from(auth);
-        audit.record(user.username(), "SSO", "LOGIN", user.username(), "SUCCESS", "roles " + user.roleNames());
-        response.sendRedirect(SafeRedirects.relativeOrRoot(returnTo == null ? null : returnTo.toString()));
     }
 }

@@ -17,17 +17,66 @@ import { DailyBuilds, PipelineInsights } from './pipelines.models';
   imports: [CardGroup, RouterLink, KpiCard, LoadState, StackedBars, BarList, StatusChip],
   templateUrl: './pipelines-overview.html',
   styles: `
-    .env-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-    .env { display: flex; flex-direction: column; gap: 4px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
-    .env:hover { border-color: var(--eu-navy-400); }
-    .env .name { font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-    .env .rate { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .problems { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-    .problems li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 6px; border-bottom: 1px solid var(--app-line); }
-    .problems li:last-child { border-bottom: 0; }
-    .problems .title { font-weight: 600; }
-    .problems .meta { font-size: 12.5px; color: var(--app-muted); }
-    .clear { display: flex; align-items: center; gap: 12px; color: var(--ok); font-weight: 600; }
+    .env-cards {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    }
+    .env {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+    .env:hover {
+      border-color: var(--eu-navy-400);
+    }
+    .env .name {
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .env .rate {
+      font-size: 24px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .problems {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 2px;
+    }
+    .problems li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--app-line);
+    }
+    .problems li:last-child {
+      border-bottom: 0;
+    }
+    .problems .title {
+      font-weight: 600;
+    }
+    .problems .meta {
+      font-size: 12.5px;
+      color: var(--app-muted);
+    }
+    .clear {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--ok);
+      font-weight: 600;
+    }
   `,
 })
 export class PipelinesOverviewPage {
@@ -55,7 +104,9 @@ export class PipelinesOverviewPage {
       values: { success: d.success, failed: d.failed, unstable: d.unstable, aborted: d.aborted },
     })),
   );
-  protected readonly buildsPerDay = computed(() => this.trend.value().map((d) => d.success + d.failed + d.aborted + d.unstable));
+  protected readonly buildsPerDay = computed(() =>
+    this.trend.value().map((d) => d.success + d.failed + d.aborted + d.unstable),
+  );
   protected readonly deploysPerDay = computed(() => this.trend.value().map((d) => d.deployments));
   protected readonly ratePerDay = computed(() =>
     this.trend.value().map((d) => {

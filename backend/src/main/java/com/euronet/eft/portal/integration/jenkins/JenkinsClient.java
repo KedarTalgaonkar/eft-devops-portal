@@ -1,9 +1,12 @@
 package com.euronet.eft.portal.integration.jenkins;
 
 import com.euronet.eft.portal.integration.IntegrationHealth;
+
 import java.util.List;
 
-/** What the portal needs from Jenkins. Implemented by {@link MockJenkinsClient} and {@link RestJenkinsClient}. */
+/**
+ * What the portal needs from Jenkins. Implemented by {@link MockJenkinsClient} and {@link RestJenkinsClient}.
+ */
 public interface JenkinsClient extends IntegrationHealth {
 
     /**

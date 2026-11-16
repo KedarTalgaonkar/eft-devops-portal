@@ -25,23 +25,27 @@ public final class Redactor {
     static final String SECRET = "[SECRET]";
 
     private static final Pattern PRIVATE_KEY = Pattern.compile(
-            "-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", Pattern.DOTALL);
+        "-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", Pattern.DOTALL);
     private static final Pattern URL_CREDENTIALS = Pattern.compile("(?i)\\b([a-z][a-z0-9+.-]*://)[^/\\s:@]+:[^/\\s@]+@");
     private static final Pattern AUTH_HEADER = Pattern.compile("(?i)\\b(authorization\\s*[:=]\\s*(?:bearer|basic|token)\\s+)[A-Za-z0-9._~+/=-]+");
     private static final Pattern JWT = Pattern.compile("\\beyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\b");
     private static final Pattern KNOWN_TOKENS = Pattern.compile(
-            "\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[abprs]-[A-Za-z0-9-]{10,}"
+        "\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[abprs]-[A-Za-z0-9-]{10,}"
             + "|sk-ant-[A-Za-z0-9_-]{10,}|AKC[a-zA-Z0-9]{10,}|cmVmd[A-Za-z0-9]{20,})\\b");
-    /** key=value, key: value, -Dkey=value, "key": "value" for secret-like keys (db.password, client_secret, apiKey, ...). */
+    /**
+     * key=value, key: value, -Dkey=value, "key": "value" for secret-like keys (db.password, client_secret, apiKey, ...).
+     */
     private static final Pattern KEY_VALUE = Pattern.compile(
-            "(?i)((?<![\\w.-])(?:-D)?[\\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credentials?)"
+        "(?i)((?<![\\w.-])(?:-D)?[\\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credentials?)"
             + "[\"']?\\s*[:=]\\s*[\"']?)([^\\s\"',;)}]+)");
-    /** Command-line flags: --password value, -token value. */
+    /**
+     * Command-line flags: --password value, -token value.
+     */
     private static final Pattern CLI_FLAG = Pattern.compile(
-            "(?i)((?<![\\w-])--?(?:password|passwd|pwd|secret|token|api-?key)\\s+)([^\\s\"']+)");
+        "(?i)((?<![\\w-])--?(?:password|passwd|pwd|secret|token|api-?key)\\s+)([^\\s\"']+)");
     private static final Pattern EMAIL = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
     private static final Pattern IPV4 = Pattern.compile(
-            "(?<![\\d.])(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}(?![\\d.]*\\d)");
+        "(?<![\\d.])(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}(?![\\d.]*\\d)");
     private static final Pattern HOST = Pattern.compile("(?i)\\b[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\\b");
 
     private final List<String> maskDomains;
@@ -53,51 +57,14 @@ public final class Redactor {
      */
     public Redactor(Collection<String> maskDomains, Collection<String> knownHosts) {
         this.maskDomains = maskDomains.stream().filter(d -> d != null && !d.isBlank())
-                .map(d -> d.strip().toLowerCase(Locale.ROOT))
-                .map(d -> d.startsWith(".") ? d : "." + d)
-                .toList();
+            .map(d -> d.strip().toLowerCase(Locale.ROOT))
+            .map(d -> d.startsWith(".") ? d : "." + d)
+            .toList();
         this.knownHosts = knownHosts.stream().filter(h -> h != null && h.length() > 2)
-                .map(h -> h.strip().toLowerCase(Locale.ROOT))
-                .distinct()
-                .sorted(Comparator.comparingInt(String::length).reversed()) // longest first
-                .toList();
-    }
-
-    public Redaction redact(String text) {
-        if (text == null || text.isEmpty()) {
-            return new Redaction("", Map.of(), Map.of());
-        }
-        Map<String, Integer> counts = new TreeMap<>();
-        Map<String, Masked> placeholders = new LinkedHashMap<>(); // lower-case original -> placeholder
-        String out = text;
-
-        out = replaceAll(PRIVATE_KEY, out, m -> secret(counts));
-        out = replaceAll(URL_CREDENTIALS, out, m -> m.group(1) + secret(counts) + "@");
-        out = replaceAll(AUTH_HEADER, out, m -> m.group(1) + secret(counts));
-        out = replaceAll(JWT, out, m -> secret(counts));
-        out = replaceAll(KNOWN_TOKENS, out, m -> secret(counts));
-        out = replaceAll(KEY_VALUE, out, m -> m.group(2).startsWith("[SECRET") ? m.group() : m.group(1) + secret(counts));
-        out = replaceAll(CLI_FLAG, out, m -> m.group(2).startsWith("[SECRET") ? m.group() : m.group(1) + secret(counts));
-        out = replaceAll(EMAIL, out, m -> placeholder("EMAIL", m.group(), placeholders, counts));
-        for (String host : knownHosts) {
-            out = replaceAll(Pattern.compile("(?i)(?<![\\w.-])" + Pattern.quote(host) + "(?![\\w-]|\\.\\w)"), out,
-                    m -> placeholder(IPV4.matcher(host).matches() ? "IP" : "HOST", m.group(), placeholders, counts));
-        }
-        out = replaceAll(IPV4, out, m -> placeholder("IP", m.group(), placeholders, counts));
-        out = replaceAll(HOST, out, m -> isInternal(m.group())
-                ? placeholder("HOST", m.group(), placeholders, counts) : m.group());
-
-        Map<String, String> restore = new LinkedHashMap<>();
-        placeholders.values().forEach(p -> restore.put(p.placeholder(), p.original()));
-        return new Redaction(out, restore, counts);
-    }
-
-    private record Masked(String placeholder, String original) {
-    }
-
-    private boolean isInternal(String host) {
-        String h = host.toLowerCase(Locale.ROOT);
-        return maskDomains.stream().anyMatch(h::endsWith);
+            .map(h -> h.strip().toLowerCase(Locale.ROOT))
+            .distinct()
+            .sorted(Comparator.comparingInt(String::length).reversed()) // longest first
+            .toList();
     }
 
     private static String secret(Map<String, Integer> counts) {
@@ -137,6 +104,43 @@ public final class Redactor {
         return sb.toString();
     }
 
+    public Redaction redact(String text) {
+        if (text == null || text.isEmpty()) {
+            return new Redaction("", Map.of(), Map.of());
+        }
+        Map<String, Integer> counts = new TreeMap<>();
+        Map<String, Masked> placeholders = new LinkedHashMap<>(); // lower-case original -> placeholder
+        String out = text;
+
+        out = replaceAll(PRIVATE_KEY, out, m -> secret(counts));
+        out = replaceAll(URL_CREDENTIALS, out, m -> m.group(1) + secret(counts) + "@");
+        out = replaceAll(AUTH_HEADER, out, m -> m.group(1) + secret(counts));
+        out = replaceAll(JWT, out, m -> secret(counts));
+        out = replaceAll(KNOWN_TOKENS, out, m -> secret(counts));
+        out = replaceAll(KEY_VALUE, out, m -> m.group(2).startsWith("[SECRET") ? m.group() : m.group(1) + secret(counts));
+        out = replaceAll(CLI_FLAG, out, m -> m.group(2).startsWith("[SECRET") ? m.group() : m.group(1) + secret(counts));
+        out = replaceAll(EMAIL, out, m -> placeholder("EMAIL", m.group(), placeholders, counts));
+        for (String host : knownHosts) {
+            out = replaceAll(Pattern.compile("(?i)(?<![\\w.-])" + Pattern.quote(host) + "(?![\\w-]|\\.\\w)"), out,
+                m -> placeholder(IPV4.matcher(host).matches() ? "IP" : "HOST", m.group(), placeholders, counts));
+        }
+        out = replaceAll(IPV4, out, m -> placeholder("IP", m.group(), placeholders, counts));
+        out = replaceAll(HOST, out, m -> isInternal(m.group())
+            ? placeholder("HOST", m.group(), placeholders, counts) : m.group());
+
+        Map<String, String> restore = new LinkedHashMap<>();
+        placeholders.values().forEach(p -> restore.put(p.placeholder(), p.original()));
+        return new Redaction(out, restore, counts);
+    }
+
+    private boolean isInternal(String host) {
+        String h = host.toLowerCase(Locale.ROOT);
+        return maskDomains.stream().anyMatch(h::endsWith);
+    }
+
+    private record Masked(String placeholder, String original) {
+    }
+
     /**
      * Result of masking.
      *
@@ -146,7 +150,19 @@ public final class Redactor {
      */
     public record Redaction(String text, Map<String, String> restore, Map<String, Integer> counts) {
 
-        /** Puts real host names / IPs / e-mails back into text produced by the model, for display in the portal. */
+        private static String singular(String k) {
+            return switch (k) {
+                case "IP addresses" -> "IP address";
+                case "host names" -> "host name";
+                case "e-mail addresses" -> "e-mail address";
+                case "secrets" -> "secret";
+                default -> k;
+            };
+        }
+
+        /**
+         * Puts real host names / IPs / e-mails back into text produced by the model, for display in the portal.
+         */
         public String restore(String modelOutput) {
             if (modelOutput == null || restore.isEmpty()) {
                 return modelOutput;
@@ -161,7 +177,9 @@ public final class Redactor {
             return out;
         }
 
-        /** Human-readable summary for the audit trail and the UI, e.g. "2 IP addresses, 1 secret masked". */
+        /**
+         * Human-readable summary for the audit trail and the UI, e.g. "2 IP addresses, 1 secret masked".
+         */
         public String summary() {
             if (counts.isEmpty()) {
                 return "nothing to mask";
@@ -169,16 +187,6 @@ public final class Redactor {
             List<String> parts = new ArrayList<>();
             counts.forEach((k, v) -> parts.add(v + " " + (v == 1 ? singular(k) : k)));
             return String.join(", ", parts) + " masked";
-        }
-
-        private static String singular(String k) {
-            return switch (k) {
-                case "IP addresses" -> "IP address";
-                case "host names" -> "host name";
-                case "e-mail addresses" -> "e-mail address";
-                case "secrets" -> "secret";
-                default -> k;
-            };
         }
     }
 }

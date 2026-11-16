@@ -16,30 +16,66 @@ import { DeploymentView, ImportResult, javaLine, tomcatLine } from './inventory.
   imports: [MatIconModule, MatTooltipModule, EnvFilter, LoadState],
   templateUrl: './inventory-deployments.html',
   styles: `
-    .inline { display: inline-flex; align-items: center; gap: 4px; }
-    .inline input { border: 1px solid var(--app-line-strong); border-radius: 8px; padding: 6px 8px; min-width: 220px; font: inherit; }
-    .icon-btn { background: none; border: 0; padding: 4px; cursor: pointer; color: var(--app-muted); display: inline-flex; border-radius: 6px; }
-    .icon-btn:hover { background: var(--neutral-soft); color: var(--eu-navy-600); }
-    .icon-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .result { display: flex; flex-direction: column; gap: 6px; }
-    .result ul { margin: 0; padding-left: 18px; }
-    .tag { display: inline-block; padding: 1px 8px; border-radius: 6px; background: var(--neutral-soft); font-size: 12px; margin-right: 4px; }
+    .inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .inline input {
+      border: 1px solid var(--app-line-strong);
+      border-radius: 8px;
+      padding: 6px 8px;
+      min-width: 220px;
+      font: inherit;
+    }
+    .icon-btn {
+      background: none;
+      border: 0;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--app-muted);
+      display: inline-flex;
+      border-radius: 6px;
+    }
+    .icon-btn:hover {
+      background: var(--neutral-soft);
+      color: var(--eu-navy-600);
+    }
+    .icon-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .result {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .result ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 6px;
+      background: var(--neutral-soft);
+      font-size: 12px;
+      margin-right: 4px;
+    }
   `,
 })
 export class InventoryDeploymentsPage {
-  private readonly http = inject(HttpClient);
-  private readonly snackBar = inject(MatSnackBar);
-  protected readonly envs = inject(Environments);
-  /** Editors and administrators may import and edit; the backend enforces the same rule. */
-  protected readonly canEdit = inject(Auth).can('EDITOR');
-
   readonly q = input<string>();
-  protected readonly search = linkedSignal(() => this.q() ?? '');
   /** ?env=SIT&java=Java 8&tomcat=Tomcat 9&pending=1 deep links from the overview charts. */
   readonly envParam = input<string | undefined>(undefined, { alias: 'env' });
   readonly java = input<string>();
   readonly tomcat = input<string>();
   readonly pending = input<string>();
+  protected readonly envs = inject(Environments);
+  /** Editors and administrators may import and edit; the backend enforces the same rule. */
+  protected readonly canEdit = inject(Auth).can('EDITOR');
+  protected readonly search = linkedSignal(() => this.q() ?? '');
   protected readonly env = linkedSignal(() => this.envParam() ?? '');
   protected readonly javaFilter = linkedSignal(() => this.java() ?? '');
   protected readonly tomcatFilter = linkedSignal(() => this.tomcat() ?? '');
@@ -48,11 +84,12 @@ export class InventoryDeploymentsPage {
   protected readonly lastImport = signal<ImportResult | null>(null);
   protected readonly editingJob = signal<number | null>(null);
   protected readonly editingRepos = signal<number | null>(null);
-
-  protected readonly deployments = httpResource<DeploymentView[]>(() => apiUrl('inventory/deployments', { env: this.env() }), {
-    defaultValue: [],
-  });
-
+  protected readonly deployments = httpResource<DeploymentView[]>(
+    () => apiUrl('inventory/deployments', { env: this.env() }),
+    {
+      defaultValue: [],
+    },
+  );
   protected readonly rows = computed(() => {
     const q = this.search().trim().toLowerCase();
     return this.deployments
@@ -63,11 +100,19 @@ export class InventoryDeploymentsPage {
       .filter(
         (d) =>
           !q ||
-          [d.application, d.client, d.owner ?? '', d.contextName, d.baseUrl ?? '', d.effectiveJenkinsJob, ...d.repositories].some((v) =>
-            v.toLowerCase().includes(q),
-          ),
+          [
+            d.application,
+            d.client,
+            d.owner ?? '',
+            d.contextName,
+            d.baseUrl ?? '',
+            d.effectiveJenkinsJob,
+            ...d.repositories,
+          ].some((v) => v.toLowerCase().includes(q)),
       );
   });
+  private readonly http = inject(HttpClient);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected upload(input: HTMLInputElement): void {
     const file = input.files?.[0];
@@ -82,9 +127,13 @@ export class InventoryDeploymentsPage {
       next: (r) => {
         this.uploading.set(false);
         this.lastImport.set(r);
-        this.snackBar.open(`Imported ${r.rowsRead} deployment paths (${r.deploymentsCreated} new, ${r.deploymentsUpdated} updated)`, 'OK', {
-          duration: 6000,
-        });
+        this.snackBar.open(
+          `Imported ${r.rowsRead} deployment paths (${r.deploymentsCreated} new, ${r.deploymentsUpdated} updated)`,
+          'OK',
+          {
+            duration: 6000,
+          },
+        );
         this.deployments.reload();
         if (r.newEnvironments.length) {
           this.envs.reload();
@@ -95,17 +144,24 @@ export class InventoryDeploymentsPage {
   }
 
   protected saveJob(row: DeploymentView, value: string): void {
-    this.http.put(apiUrl(`inventory/deployments/${row.id}`), { jenkinsJob: value }).subscribe(() => {
-      this.editingJob.set(null);
-      this.deployments.reload();
-    });
+    this.http
+      .put(apiUrl(`inventory/deployments/${row.id}`), { jenkinsJob: value })
+      .subscribe(() => {
+        this.editingJob.set(null);
+        this.deployments.reload();
+      });
   }
 
   protected saveRepos(row: DeploymentView, value: string): void {
-    const repositories = value.split(/[,\n;]/).map((s) => s.trim()).filter(Boolean);
-    this.http.put(apiUrl(`inventory/applications/${row.applicationId}/repositories`), { repositories }).subscribe(() => {
-      this.editingRepos.set(null);
-      this.deployments.reload();
-    });
+    const repositories = value
+      .split(/[,\n;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    this.http
+      .put(apiUrl(`inventory/applications/${row.applicationId}/repositories`), { repositories })
+      .subscribe(() => {
+        this.editingRepos.set(null);
+        this.deployments.reload();
+      });
   }
 }

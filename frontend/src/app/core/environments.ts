@@ -1,4 +1,4 @@
-import { Injectable, computed } from '@angular/core';
+import { computed, Injectable } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { apiUrl } from './api';
 
@@ -16,7 +16,9 @@ export interface EnvironmentView {
  */
 @Injectable({ providedIn: 'root' })
 export class Environments {
-  readonly all = httpResource<EnvironmentView[]>(() => apiUrl('environments'), { defaultValue: [] });
+  readonly all = httpResource<EnvironmentView[]>(() => apiUrl('environments'), {
+    defaultValue: [],
+  });
   readonly active = computed(() => this.all.value().filter((e) => e.active));
   readonly codes = computed(() => this.active().map((e) => e.code));
 

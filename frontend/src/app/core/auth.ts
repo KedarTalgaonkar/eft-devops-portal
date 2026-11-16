@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -32,12 +32,13 @@ export class Auth {
   private readonly router = inject(Router);
 
   private readonly state = signal<AuthSession | null>(null);
-  private loading: Promise<AuthSession> | null = null;
-
   readonly session = this.state.asReadonly();
   readonly user = computed(() => this.state()?.user ?? null);
   readonly authenticated = computed(() => !!this.state()?.authenticated);
-  readonly providers = computed(() => this.state()?.providers ?? { ssoEnabled: false, ssoLabel: '', localEnabled: false });
+  readonly providers = computed(
+    () => this.state()?.providers ?? { ssoEnabled: false, ssoLabel: '', localEnabled: false },
+  );
+  private loading: Promise<AuthSession> | null = null;
 
   /** Loads the session once (also obtains the XSRF-TOKEN cookie); pass force to re-check. */
   load(force = false): Promise<AuthSession> {
@@ -67,7 +68,9 @@ export class Auth {
 
   async loginLocal(username: string, password: string): Promise<SessionUser> {
     await this.load(); // make sure the XSRF cookie exists before the POST
-    const user = await firstValueFrom(this.http.post<SessionUser>('/api/auth/login', { username, password }));
+    const user = await firstValueFrom(
+      this.http.post<SessionUser>('/api/auth/login', { username, password }),
+    );
     await this.load(true);
     return user;
   }
@@ -80,7 +83,9 @@ export class Auth {
   async logout(): Promise<void> {
     let target = '/login?signedOut';
     try {
-      const res = await firstValueFrom(this.http.post<{ logoutUrl: string }>('/api/auth/logout', {}));
+      const res = await firstValueFrom(
+        this.http.post<{ logoutUrl: string }>('/api/auth/logout', {}),
+      );
       target = res.logoutUrl;
     } finally {
       this.state.set(null);
@@ -94,15 +99,24 @@ export class Auth {
     this.state.set(null);
     const here = this.router.url;
     if (!here.startsWith('/login')) {
-      void this.router.navigate(['/login'], { queryParams: { returnTo: safeReturnTo(here), expired: 1 } });
+      void this.router.navigate(['/login'], {
+        queryParams: { returnTo: safeReturnTo(here), expired: 1 },
+      });
     }
   }
 }
 
 /** Same rule as the backend: only same-origin relative paths, never back to /login. */
 export function safeReturnTo(path: string | null | undefined): string {
-  if (!path || !path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\') || path.startsWith('/login')
-      || path.startsWith('/api/') || path.includes('://')) {
+  if (
+    !path ||
+    !path.startsWith('/') ||
+    path.startsWith('//') ||
+    path.startsWith('/\\') ||
+    path.startsWith('/login') ||
+    path.startsWith('/api/') ||
+    path.includes('://')
+  ) {
     return '/';
   }
   return path;

@@ -4,7 +4,6 @@ import com.euronet.eft.portal.announcement.AnnouncementService.AnnouncementReque
 import com.euronet.eft.portal.announcement.AnnouncementService.AnnouncementView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Reading is for every signed-in user; publishing, editing and ending need EDITOR (SecurityConfig). Changes are audited. */
+import java.util.List;
+
+/**
+ * Reading is for every signed-in user; publishing, editing and ending need EDITOR (SecurityConfig). Changes are audited.
+ */
 @RestController
 @RequestMapping("/api/announcements")
 @Tag(name = "Announcements", description = "Time-bound header messages for releases, deployments and maintenance")

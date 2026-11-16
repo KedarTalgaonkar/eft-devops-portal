@@ -1,4 +1,4 @@
-import { Injectable, computed } from '@angular/core';
+import { computed, Injectable } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { apiUrl } from './api';
 
@@ -32,7 +32,15 @@ export interface StoredInsight<T> {
 }
 
 export type FailureCategory =
-  | 'COMPILE' | 'TEST' | 'DEPENDENCY' | 'QUALITY_GATE' | 'DEPLOYMENT' | 'INFRASTRUCTURE' | 'TIMEOUT' | 'CONFIGURATION' | 'UNKNOWN';
+  | 'COMPILE'
+  | 'TEST'
+  | 'DEPENDENCY'
+  | 'QUALITY_GATE'
+  | 'DEPLOYMENT'
+  | 'INFRASTRUCTURE'
+  | 'TIMEOUT'
+  | 'CONFIGURATION'
+  | 'UNKNOWN';
 
 export interface BuildDiagnosis {
   category: FailureCategory;
@@ -61,7 +69,12 @@ export interface ExecutiveDigest {
   overall: Rag;
   summary: string;
   improvements: string[];
-  risks: { title: string; area: string; severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'; detail: string }[];
+  risks: {
+    title: string;
+    area: string;
+    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    detail: string;
+  }[];
   actions: { action: string; owner: string; area: string }[];
   areas: { area: string; status: Rag; note: string }[];
 }

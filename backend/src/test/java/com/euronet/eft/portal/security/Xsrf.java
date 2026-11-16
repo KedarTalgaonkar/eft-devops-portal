@@ -1,10 +1,11 @@
 package com.euronet.eft.portal.security;
 
 import jakarta.servlet.http.Cookie;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * Double-submit CSRF exactly as the Angular app does it: the same random value in the XSRF-TOKEN cookie and the

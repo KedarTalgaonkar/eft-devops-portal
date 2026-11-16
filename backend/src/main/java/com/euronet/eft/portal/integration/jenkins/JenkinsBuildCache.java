@@ -1,11 +1,14 @@
 package com.euronet.eft.portal.integration.jenkins;
 
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
-/** Caches build lists per job for a minute, so the pipeline table and dashboard don't hammer Jenkins. */
+import java.util.List;
+
+/**
+ * Caches build lists per job for a minute, so the pipeline table and dashboard don't hammer Jenkins.
+ */
 @Component
 public class JenkinsBuildCache {
 

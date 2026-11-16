@@ -15,13 +15,14 @@ import com.euronet.eft.portal.pipelines.PipelineService;
 import com.euronet.eft.portal.pipelines.PipelineService.PipelineRef;
 import com.euronet.eft.portal.security.CurrentUser;
 import com.euronet.eft.portal.security.PortalRole;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 
 /**
  * Explains why a Jenkins build failed: fetches the log, sends the masked tail to the model, stores the answer so
@@ -31,28 +32,25 @@ import org.springframework.stereotype.Service;
 public class BuildExplanationService {
 
     public static final String FEATURE = "build-diagnosis";
-
-    private static final Set<BuildResult> EXPLAINABLE = EnumSet.of(BuildResult.FAILURE, BuildResult.UNSTABLE, BuildResult.ABORTED);
-
     static final String SYSTEM_PROMPT = """
-            You are a senior build and release engineer for Euronet's EFT (payments switching) applications, which are
-            Java/Maven projects built by Jenkins and deployed to Apache Tomcat servers in DEVELOP, SIT and UAT.
+        You are a senior build and release engineer for Euronet's EFT (payments switching) applications, which are
+        Java/Maven projects built by Jenkins and deployed to Apache Tomcat servers in DEVELOP, SIT and UAT.
 
-            You receive the end of the console log of one failed Jenkins build, plus error lines from earlier in the log.
-            Find the root cause and explain it for the support engineer who has to fix it.
+        You receive the end of the console log of one failed Jenkins build, plus error lines from earlier in the log.
+        Find the root cause and explain it for the support engineer who has to fix it.
 
-            Rules:
-            - Base every statement on the log. Quote evidence lines exactly as they appear, without changing them.
-            - The first real error usually matters most; later errors are often consequences of it.
-            - Values such as [IP_1], [HOST_2], [EMAIL_1] and [SECRET] are masked on purpose. Refer to them by these
-              placeholders; never guess or ask for the real values.
-            - Mark notACodeProblem true when the code is probably fine (agent disk full, server down, credentials
-              expired, network, timeouts caused by another system).
-            - If the log does not show the cause, say so with category UNKNOWN and confidence LOW rather than guessing.
-            - Fix steps must be concrete actions for this pipeline, not generic advice. No more than five.
-            - Write plain, short Indian English (British spelling: analyse, behaviour, centre). No markdown.
-            """;
-
+        Rules:
+        - Base every statement on the log. Quote evidence lines exactly as they appear, without changing them.
+        - The first real error usually matters most; later errors are often consequences of it.
+        - Values such as [IP_1], [HOST_2], [EMAIL_1] and [SECRET] are masked on purpose. Refer to them by these
+          placeholders; never guess or ask for the real values.
+        - Mark notACodeProblem true when the code is probably fine (agent disk full, server down, credentials
+          expired, network, timeouts caused by another system).
+        - If the log does not show the cause, say so with category UNKNOWN and confidence LOW rather than guessing.
+        - Fix steps must be concrete actions for this pipeline, not generic advice. No more than five.
+        - Write plain, short Indian English (British spelling: analyse, behaviour, centre). No markdown.
+        """;
+    private static final Set<BuildResult> EXPLAINABLE = EnumSet.of(BuildResult.FAILURE, BuildResult.UNSTABLE, BuildResult.ABORTED);
     private final AiGateway gateway;
     private final AiInsightService insights;
     private final PipelineService pipelines;
@@ -68,20 +66,42 @@ public class BuildExplanationService {
         this.props = props;
     }
 
-    /** A stored explanation plus context for the UI. */
-    public record BuildExplanation(AiInsightService.Stored<BuildDiagnosis> result, String job, int buildNumber,
-                                   long logBytes, boolean logTruncated, List<SimilarFailure> similar) {
+    static String prompt(PipelineRef ref, BuildView build, BuildLog log) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Pipeline: ").append(ref.project()).append(" (client ").append(ref.client()).append(") in ")
+            .append(ref.environment()).append('\n')
+            .append("Jenkins job: ").append(ref.job()).append(" build #").append(build.number())
+            .append(", result ").append(build.result()).append(", duration ").append(build.durationSeconds()).append(" s\n")
+            .append("Log size: ").append(log.totalBytes()).append(" bytes")
+            .append(log.truncated() ? " (only the end is included)" : "").append("\n\n");
+        if (!log.earlyErrors().isEmpty()) {
+            sb.append("<earlier_error_lines>\n").append(String.join("\n", log.earlyErrors())).append("\n</earlier_error_lines>\n\n");
+        }
+        sb.append("<log_tail>\n").append(log.tail()).append("\n</log_tail>\n\n")
+            .append("Diagnose this failure.");
+        return sb.toString();
     }
 
-    /** An earlier explained build of the same job with the same category: a repeating problem. */
-    public record SimilarFailure(int buildNumber, String summary, java.time.Instant explainedAt) {
+    static String subject(PipelineRef ref, int number) {
+        return ref.job() + "#" + number;
     }
 
-    /** The stored explanation, if this build was explained before. */
+    private static String user() {
+        return CurrentUser.nameOrSystem();
+    }
+
+    static boolean canRegenerate() {
+        CurrentUser u = CurrentUser.current();
+        return u != null && (u.roles().contains(PortalRole.EDITOR) || u.roles().contains(PortalRole.ADMIN));
+    }
+
+    /**
+     * The stored explanation, if this build was explained before.
+     */
     public Optional<BuildExplanation> find(long applicationId, String environment, int number) {
         PipelineRef ref = pipelines.ref(applicationId, environment);
         return insights.find(FEATURE, subject(ref, number), BuildDiagnosis.class, user())
-                .map(r -> new BuildExplanation(r, ref.job(), number, 0, false, similar(ref, number, r.content())));
+            .map(r -> new BuildExplanation(r, ref.job(), number, 0, false, similar(ref, number, r.content())));
     }
 
     /**
@@ -109,26 +129,10 @@ public class BuildExplanationService {
         BuildLog log = jenkins.log(ref.job(), number, props.maxLogKb() * 1024);
         String input = prompt(ref, build, log);
         AiOutcome<BuildDiagnosis> outcome = gateway.run(new AiTask<>(FEATURE, subject, BuildDiagnosis.class, SYSTEM_PROMPT,
-                input, AiTask.Effort.MEDIUM, 8000, MockBuildDiagnoser::diagnose));
+            input, AiTask.Effort.MEDIUM, 8000, MockBuildDiagnoser::diagnose));
         AiInsightService.Stored<BuildDiagnosis> stored = insights.save(FEATURE, subject, outcome, user(), BuildDiagnosis.class);
         return new BuildExplanation(stored, ref.job(), number, log.totalBytes(), log.truncated(),
-                similar(ref, number, stored.content()));
-    }
-
-    static String prompt(PipelineRef ref, BuildView build, BuildLog log) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Pipeline: ").append(ref.project()).append(" (client ").append(ref.client()).append(") in ")
-                .append(ref.environment()).append('\n')
-                .append("Jenkins job: ").append(ref.job()).append(" build #").append(build.number())
-                .append(", result ").append(build.result()).append(", duration ").append(build.durationSeconds()).append(" s\n")
-                .append("Log size: ").append(log.totalBytes()).append(" bytes")
-                .append(log.truncated() ? " (only the end is included)" : "").append("\n\n");
-        if (!log.earlyErrors().isEmpty()) {
-            sb.append("<earlier_error_lines>\n").append(String.join("\n", log.earlyErrors())).append("\n</earlier_error_lines>\n\n");
-        }
-        sb.append("<log_tail>\n").append(log.tail()).append("\n</log_tail>\n\n")
-                .append("Diagnose this failure.");
-        return sb.toString();
+            similar(ref, number, stored.content()));
     }
 
     private List<SimilarFailure> similar(PipelineRef ref, int number, BuildDiagnosis current) {
@@ -136,11 +140,11 @@ public class BuildExplanationService {
             return List.of();
         }
         return insights.withSubjectPrefix(FEATURE, ref.job() + "#", 30).stream()
-                .filter(i -> !i.getSubject().equals(subject(ref, number)))
-                .map(i -> similarOf(i, current.category()))
-                .filter(Objects::nonNull)
-                .limit(5)
-                .toList();
+            .filter(i -> !i.getSubject().equals(subject(ref, number)))
+            .map(i -> similarOf(i, current.category()))
+            .filter(Objects::nonNull)
+            .limit(5)
+            .toList();
     }
 
     private SimilarFailure similarOf(AiInsight i, BuildDiagnosis.Category category) {
@@ -156,16 +160,16 @@ public class BuildExplanationService {
         }
     }
 
-    static String subject(PipelineRef ref, int number) {
-        return ref.job() + "#" + number;
+    /**
+     * A stored explanation plus context for the UI.
+     */
+    public record BuildExplanation(AiInsightService.Stored<BuildDiagnosis> result, String job, int buildNumber,
+                                   long logBytes, boolean logTruncated, List<SimilarFailure> similar) {
     }
 
-    private static String user() {
-        return CurrentUser.nameOrSystem();
-    }
-
-    static boolean canRegenerate() {
-        CurrentUser u = CurrentUser.current();
-        return u != null && (u.roles().contains(PortalRole.EDITOR) || u.roles().contains(PortalRole.ADMIN));
+    /**
+     * An earlier explained build of the same job with the same category: a repeating problem.
+     */
+    public record SimilarFailure(int buildNumber, String summary, java.time.Instant explainedAt) {
     }
 }

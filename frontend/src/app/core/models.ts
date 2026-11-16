@@ -3,7 +3,8 @@
 /** Any environment code from /api/environments (DEVELOP, SIT, UAT, PERF, PROD, ...). */
 export type Environment = string;
 
-export type BuildResult = 'SUCCESS' | 'FAILURE' | 'ABORTED' | 'UNSTABLE' | 'NOT_BUILT' | 'IN_PROGRESS';
+export type BuildResult =
+  'SUCCESS' | 'FAILURE' | 'ABORTED' | 'UNSTABLE' | 'NOT_BUILT' | 'IN_PROGRESS';
 
 export type HealthState = 'UP' | 'DOWN' | 'UNKNOWN';
 

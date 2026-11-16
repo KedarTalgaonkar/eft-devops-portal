@@ -2,12 +2,13 @@ package com.euronet.eft.portal.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.function.Supplier;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.util.StringUtils;
+
+import java.util.function.Supplier;
 
 /**
  * CSRF for the Angular SPA (double-submit cookie): the token is sent in the readable XSRF-TOKEN cookie and Angular

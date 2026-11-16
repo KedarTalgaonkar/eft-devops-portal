@@ -6,10 +6,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** One AI call (live or mock) in the usage and cost ledger. */
+/**
+ * One AI call (live or mock) in the usage and cost ledger.
+ */
 @Entity
 @Table(name = "ai_usage")
 public class AiUsage {

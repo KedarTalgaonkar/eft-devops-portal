@@ -10,15 +10,34 @@ const ANSWER: BuildExplanation = {
   buildNumber: 412,
   logBytes: 3_500_000,
   logTruncated: true,
-  similar: [{ buildNumber: 405, summary: 'Deployment to Tomcat failed.', explainedAt: '2026-11-10T08:00:00Z' }],
+  similar: [
+    {
+      buildNumber: 405,
+      summary: 'Deployment to Tomcat failed.',
+      explainedAt: '2026-11-10T08:00:00Z',
+    },
+  ],
   result: {
-    id: 7, feature: 'build-diagnosis', subject: 'EFT/prepaid-qr-SIT#412', mode: 'MOCK', model: 'sample',
-    masking: '1 IP address, 1 secret masked', createdAt: '2026-11-14T08:00:00Z', createdBy: 'priya',
-    helpful: 2, notHelpful: 0, myVote: null,
+    id: 7,
+    feature: 'build-diagnosis',
+    subject: 'EFT/prepaid-qr-SIT#412',
+    mode: 'MOCK',
+    model: 'sample',
+    masking: '1 IP address, 1 secret masked',
+    createdAt: '2026-11-14T08:00:00Z',
+    createdBy: 'priya',
+    helpful: 2,
+    notHelpful: 0,
+    myVote: null,
     content: {
-      category: 'DEPLOYMENT', summary: 'Deployment to Tomcat failed: the server did not accept the connection.',
-      likelyCause: 'Tomcat on the target host is down.', evidence: ['curl: (7) Failed to connect to 192.0.2.41 port 9091'],
-      fixSteps: ['Start Tomcat', 'Retry the deploy stage'], owner: 'MIDDLEWARE', confidence: 'HIGH', notACodeProblem: true,
+      category: 'DEPLOYMENT',
+      summary: 'Deployment to Tomcat failed: the server did not accept the connection.',
+      likelyCause: 'Tomcat on the target host is down.',
+      evidence: ['curl: (7) Failed to connect to 192.0.2.41 port 9091'],
+      fixSteps: ['Start Tomcat', 'Retry the deploy stage'],
+      owner: 'MIDDLEWARE',
+      confidence: 'HIGH',
+      notACodeProblem: true,
     },
   },
 };
@@ -67,10 +86,15 @@ describe('BuildExplanationPanel', () => {
 
     TestBed.inject(HttpTestingController)
       .expectOne('/api/ai/builds/3/SIT/412/explain')
-      .flush({ status: 429, message: "You have reached today's limit of 50 AI requests." }, { status: 429, statusText: 'Too Many Requests' });
+      .flush(
+        { status: 429, message: "You have reached today's limit of 50 AI requests." },
+        { status: 429, statusText: 'Too Many Requests' },
+      );
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain("today's limit of 50 AI requests");
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      "today's limit of 50 AI requests",
+    );
   });
 });

@@ -12,9 +12,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -40,37 +37,19 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
-/** Sign-in, sign-out and session state for the SPA. */
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Sign-in, sign-out and session state for the SPA.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Single sign-on, local accounts and the current session")
 public class AuthController {
 
     private static final String INVALID = "Invalid username or password.";
-
-    public record SessionView(boolean authenticated, UserView user, Providers providers) {
-    }
-
-    public record UserView(String username, String displayName, String email, List<String> roles, String source,
-                           boolean mustChangePassword) {
-        static UserView of(CurrentUser u) {
-            return new UserView(u.username(), u.displayName(), u.email(), u.roleNames(), u.source().name(), u.mustChangePassword());
-        }
-    }
-
-    public record Providers(boolean ssoEnabled, String ssoLabel, boolean localEnabled) {
-    }
-
-    public record LoginRequest(@NotBlank @Size(max = 100) String username, @NotBlank @Size(max = 200) String password) {
-    }
-
-    public record ChangePasswordRequest(@NotBlank @Size(max = 200) String currentPassword,
-                                        @NotBlank @Size(max = 200) String newPassword) {
-    }
-
-    public record LogoutView(String logoutUrl) {
-    }
-
     private final SecurityProperties props;
     private final AuthenticationManager localAuth;
     private final LocalUserService localUsers;
@@ -79,7 +58,6 @@ public class AuthController {
     private final CsrfTokenRepository csrfRepository;
     private final AuditService audit;
     private final ObjectProvider<ClientRegistrationRepository> registrations;
-
     public AuthController(SecurityProperties props, @Qualifier("localAuthenticationManager") AuthenticationManager localAuth,
                           LocalUserService localUsers, SessionAuthenticationStrategy sessionStrategy,
                           SecurityContextRepository contextRepository, CsrfTokenRepository csrfRepository, AuditService audit,
@@ -134,7 +112,7 @@ public class AuthController {
     @GetMapping("/sso")
     @Operation(summary = "Start single sign-on; returnTo must be a relative portal path")
     public void sso(@RequestParam(required = false) String returnTo, HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         ClientRegistration registration = ssoRegistration();
         if (registration == null) {
             response.sendRedirect("/login?error=sso-disabled");
@@ -154,9 +132,9 @@ public class AuthController {
             String endSession = endSessionEndpoint();
             if (endSession != null) {
                 next = UriComponentsBuilder.fromUriString(endSession)
-                        .queryParam("id_token_hint", oidc.getIdToken().getTokenValue())
-                        .queryParam("post_logout_redirect_uri", next)
-                        .encode().build().toUriString();
+                    .queryParam("id_token_hint", oidc.getIdToken().getTokenValue())
+                    .queryParam("post_logout_redirect_uri", next)
+                    .encode().build().toUriString();
             }
         }
         HttpSession session = request.getSession(false);
@@ -199,7 +177,30 @@ public class AuthController {
         }
         ClientRegistration registration = ssoRegistration();
         Object discovered = registration == null ? null
-                : registration.getProviderDetails().getConfigurationMetadata().get("end_session_endpoint");
+            : registration.getProviderDetails().getConfigurationMetadata().get("end_session_endpoint");
         return discovered == null ? null : discovered.toString();
+    }
+
+    public record SessionView(boolean authenticated, UserView user, Providers providers) {
+    }
+
+    public record UserView(String username, String displayName, String email, List<String> roles, String source,
+                           boolean mustChangePassword) {
+        static UserView of(CurrentUser u) {
+            return new UserView(u.username(), u.displayName(), u.email(), u.roleNames(), u.source().name(), u.mustChangePassword());
+        }
+    }
+
+    public record Providers(boolean ssoEnabled, String ssoLabel, boolean localEnabled) {
+    }
+
+    public record LoginRequest(@NotBlank @Size(max = 100) String username, @NotBlank @Size(max = 200) String password) {
+    }
+
+    public record ChangePasswordRequest(@NotBlank @Size(max = 200) String currentPassword,
+                                        @NotBlank @Size(max = 200) String newPassword) {
+    }
+
+    public record LogoutView(String logoutUrl) {
     }
 }

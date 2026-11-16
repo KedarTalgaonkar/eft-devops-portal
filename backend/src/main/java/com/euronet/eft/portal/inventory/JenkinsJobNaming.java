@@ -1,14 +1,15 @@
 package com.euronet.eft.portal.inventory;
 
 import com.euronet.eft.portal.common.Slugs;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 /**
  * Decides which Jenkins job tracks an application in an environment: the job set on the deployment,
@@ -29,12 +30,14 @@ public class JenkinsJobNaming {
         this.pattern = pattern == null || pattern.isBlank() ? DEFAULT_PATTERN : pattern.strip();
     }
 
-    /** Names (lower case) used by more than one client, from any collection of deployments. */
+    /**
+     * Names (lower case) used by more than one client, from any collection of deployments.
+     */
     public static Set<String> sharedNames(Collection<Deployment> deployments) {
         Map<String, Set<String>> clientsByName = new HashMap<>();
         for (Deployment d : deployments) {
             clientsByName.computeIfAbsent(d.getApplication().getName().toLowerCase(Locale.ROOT), k -> new HashSet<>())
-                    .add(d.getApplication().getClient().toLowerCase(Locale.ROOT));
+                .add(d.getApplication().getClient().toLowerCase(Locale.ROOT));
         }
         Set<String> shared = new HashSet<>();
         clientsByName.forEach((name, clients) -> {
@@ -55,17 +58,19 @@ public class JenkinsJobNaming {
     public String fromPattern(Application app, String environment, Set<String> sharedNames) {
         String effective = pattern;
         if (!effective.contains("{client}") && !app.getClient().isBlank()
-                && sharedNames.contains(app.getName().toLowerCase(Locale.ROOT))) {
+            && sharedNames.contains(app.getName().toLowerCase(Locale.ROOT))) {
             effective = effective.replace("{app}", "{app}-{client}");
         }
         return effective
-                .replace("{app}", Slugs.slug(app.getName()))
-                .replace("{client}", Slugs.slug(app.getClient()))
-                .replace("{ENV}", environment)
-                .replace("{env}", environment.toLowerCase(Locale.ROOT));
+            .replace("{app}", Slugs.slug(app.getName()))
+            .replace("{client}", Slugs.slug(app.getClient()))
+            .replace("{ENV}", environment)
+            .replace("{env}", environment.toLowerCase(Locale.ROOT));
     }
 
-    /** Pattern-only name, for callers that know the application name is unique. */
+    /**
+     * Pattern-only name, for callers that know the application name is unique.
+     */
     public String fromPattern(Application app, String environment) {
         return fromPattern(app, environment, Set.of());
     }

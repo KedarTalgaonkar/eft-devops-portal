@@ -7,14 +7,16 @@ public final class Slugs {
     private Slugs() {
     }
 
-    /** "Euronet Prepaid (PPI)" becomes "euronet-prepaid-ppi". */
+    /**
+     * "Euronet Prepaid (PPI)" becomes "euronet-prepaid-ppi".
+     */
     public static String slug(String value) {
         if (value == null) {
             return "";
         }
         return value.trim()
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-+)|(-+$)", "");
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("(^-+)|(-+$)", "");
     }
 }

@@ -8,13 +8,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** A local (database) account. Only the BCrypt hash of the password is stored. */
+/**
+ * A local (database) account. Only the BCrypt hash of the password is stored.
+ */
 @Entity
 @Table(name = "portal_user")
 public class LocalUser {
@@ -87,9 +90,9 @@ public class LocalUser {
             return EnumSet.noneOf(PortalRole.class);
         }
         return Arrays.stream(roles.split(","))
-                .map(PortalRole::parse)
-                .flatMap(java.util.Optional::stream)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(PortalRole.class)));
+            .map(PortalRole::parse)
+            .flatMap(java.util.Optional::stream)
+            .collect(Collectors.toCollection(() -> EnumSet.noneOf(PortalRole.class)));
     }
 
     public void setRoles(Set<PortalRole> roleSet) {

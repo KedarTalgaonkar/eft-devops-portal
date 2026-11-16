@@ -4,7 +4,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-/** Creates the first local administrator from PORTAL_BOOTSTRAP_ADMIN_PASSWORD when no local account exists yet. */
+/**
+ * Creates the first local administrator from PORTAL_BOOTSTRAP_ADMIN_PASSWORD when no local account exists yet.
+ */
 @Component
 class BootstrapAdminRunner implements ApplicationRunner {
 

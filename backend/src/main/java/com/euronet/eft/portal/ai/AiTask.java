@@ -17,5 +17,5 @@ import java.util.function.Function;
 public record AiTask<T>(String feature, String subject, Class<T> type, String system, String input, Effort effort,
                         int maxTokens, Function<String, T> mock) {
 
-    public enum Effort { LOW, MEDIUM, HIGH }
+    public enum Effort {LOW, MEDIUM, HIGH}
 }

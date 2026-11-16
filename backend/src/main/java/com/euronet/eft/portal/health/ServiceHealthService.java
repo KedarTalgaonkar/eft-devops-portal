@@ -3,6 +3,12 @@ package com.euronet.eft.portal.health;
 import com.euronet.eft.portal.inventory.Application;
 import com.euronet.eft.portal.inventory.Deployment;
 import com.euronet.eft.portal.inventory.InventoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,11 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 /**
  * Probes every deployment URL from the inventory on a schedule and keeps the latest result in memory.
@@ -51,19 +52,25 @@ public class ServiceHealthService {
         this.timeout = timeout;
     }
 
+    private static ServiceHealth result(Deployment d, String url, HealthState state, Integer status, Long ms, String detail) {
+        Application a = d.getApplication();
+        return new ServiceHealth(d.getId(), a.getId(), a.getName(), a.getClient(), a.getOwner(), d.getEnvironment(),
+            d.getContextName(), url, state, status, ms, Instant.now(), detail);
+    }
+
     @Scheduled(initialDelayString = "PT5S", fixedDelayString = "${portal.health.interval:PT2M}")
     public void refresh() {
         List<Deployment> deployments = inventory.allDeployments();
         Map<Long, ServiceHealth> next = new ConcurrentHashMap<>();
         if (live) {
             HttpClient http = HttpClient.newBuilder()
-                    .connectTimeout(timeout)
-                    .followRedirects(HttpClient.Redirect.NEVER)
-                    .build();
+                .connectTimeout(timeout)
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
             try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
                 List<Future<ServiceHealth>> futures = deployments.stream()
-                        .map(d -> pool.submit(() -> probeLive(http, d)))
-                        .toList();
+                    .map(d -> pool.submit(() -> probeLive(http, d)))
+                    .toList();
                 for (Future<ServiceHealth> f : futures) {
                     try {
                         ServiceHealth h = f.get();
@@ -82,16 +89,18 @@ public class ServiceHealthService {
         log.debug("Service health refreshed: {} deployments ({})", next.size(), live ? "live" : "mock");
     }
 
-    /** Latest probe results; runs a first probe synchronously if the scheduler has not run yet. */
+    /**
+     * Latest probe results; runs a first probe synchronously if the scheduler has not run yet.
+     */
     public List<ServiceHealth> snapshot() {
         if (lastRun == null) {
             refresh();
         }
         return latest.values().stream()
-                .sorted(Comparator.comparing(ServiceHealth::project, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(ServiceHealth::environment)
-                        .thenComparing(ServiceHealth::contextName, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+            .sorted(Comparator.comparing(ServiceHealth::project, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(ServiceHealth::environment)
+                .thenComparing(ServiceHealth::contextName, String.CASE_INSENSITIVE_ORDER))
+            .toList();
     }
 
     public Instant lastRun() {
@@ -125,12 +134,6 @@ public class ServiceHealthService {
         Random random = new Random(url.hashCode() * 31L + hour);
         boolean down = random.nextInt(14) == 0;
         return result(d, url, down ? HealthState.DOWN : HealthState.UP, down ? 503 : 200,
-                40L + random.nextInt(900), down ? "Mock: HTTP 503" : "Mock: HTTP 200");
-    }
-
-    private static ServiceHealth result(Deployment d, String url, HealthState state, Integer status, Long ms, String detail) {
-        Application a = d.getApplication();
-        return new ServiceHealth(d.getId(), a.getId(), a.getName(), a.getClient(), a.getOwner(), d.getEnvironment(),
-                d.getContextName(), url, state, status, ms, Instant.now(), detail);
+            40L + random.nextInt(900), down ? "Mock: HTTP 503" : "Mock: HTTP 200");
     }
 }

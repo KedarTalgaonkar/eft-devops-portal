@@ -15,13 +15,16 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** An EFT application for one client, e.g. "IMPS Portal" for "COSMOS BANK". */
+/**
+ * An EFT application for one client, e.g. "IMPS Portal" for "COSMOS BANK".
+ */
 @Entity
 @Table(name = "application")
 public class Application {
@@ -48,7 +51,9 @@ public class Application {
     @OrderBy("environment ASC, contextName ASC")
     private List<Deployment> deployments = new ArrayList<>();
 
-    /** Source repositories (GitHub "org/name"); any number per application. */
+    /**
+     * Source repositories (GitHub "org/name"); any number per application.
+     */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "application_repository", joinColumns = @JoinColumn(name = "application_id"))
     @Column(name = "repository", nullable = false)

@@ -14,7 +14,7 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eft -d eftportal_test"]
+      test: [ "CMD-SHELL", "pg_isready -U eft -d eftportal_test" ]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -23,7 +23,7 @@ services:
     image: maven:3.9-eclipse-temurin-25
     working_dir: /src
     # -Dtest.excludedGroups= also runs the database-backed tests (the image build skips them)
-    command: ["mvn", "-B", "verify", "-Dtest.excludedGroups="]
+    command: [ "mvn", "-B", "verify", "-Dtest.excludedGroups=" ]
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/eftportal_test
       DB_USER: eft
@@ -38,7 +38,7 @@ services:
   frontend-test:
     image: node:24-alpine
     working_dir: /app
-    command: ["sh", "-c", "npm ci && npx ng test --watch=false"]
+    command: [ "sh", "-c", "npm ci && npx ng test --watch=false" ]
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -1,43 +1,45 @@
-<div class="shell" [class.nav-open]="navOpen()">
-  <aside class="nav" aria-label="Main menu">
-    <div class="brand"><app-brand-mark /></div>
+<div [class.nav-open]="navOpen()" class="shell">
+  <aside aria-label="Main menu" class="nav">
+    <div class="brand">
+      <app-brand-mark/>
+    </div>
 
     <nav>
       @for (g of groups(); track g.label) {
-        <div class="group">
-          <div class="group-label">{{ g.label }}</div>
-          @for (item of g.items; track item.path) {
-            <a class="item" [routerLink]="item.path" routerLinkActive="active">
-              @if (item.logo) {
-                <app-tool-logo [name]="item.logo" [size]="18" mono="currentColor" />
-              } @else {
-                <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
-              }
-              <span>{{ item.label }}</span>
-            </a>
+      <div class="group">
+        <div class="group-label">{{ g.label }}</div>
+        @for (item of g.items; track item.path) {
+        <a [routerLink]="item.path" class="item" routerLinkActive="active">
+          @if (item.logo) {
+          <app-tool-logo [name]="item.logo" [size]="18" mono="currentColor"/>
+          } @else {
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
           }
-        </div>
+          <span>{{ item.label }}</span>
+        </a>
+        }
+      </div>
       }
     </nav>
 
     @if (auth.user(); as u) {
-      <div class="user">
-        <div class="avatar" aria-hidden="true">{{ initials() }}</div>
-        <div class="who">
-          <div class="name">{{ u.displayName }}</div>
-          <div class="meta">{{ topRole() }} · {{ u.source === 'SSO' ? 'Single sign-on' : 'Local account' }}</div>
-        </div>
-        <div class="user-actions">
-          @if (u.source === 'LOCAL') {
-            <a class="icon-btn" routerLink="/account/password" matTooltip="Change password" aria-label="Change password">
-              <mat-icon>key</mat-icon>
-            </a>
-          }
-          <button type="button" class="icon-btn" (click)="signOut()" matTooltip="Sign out" aria-label="Sign out">
-            <mat-icon>logout</mat-icon>
-          </button>
-        </div>
+    <div class="user">
+      <div aria-hidden="true" class="avatar">{{ initials() }}</div>
+      <div class="who">
+        <div class="name">{{ u.displayName }}</div>
+        <div class="meta">{{ topRole() }} · {{ u.source === 'SSO' ? 'Single sign-on' : 'Local account' }}</div>
       </div>
+      <div class="user-actions">
+        @if (u.source === 'LOCAL') {
+        <a aria-label="Change password" class="icon-btn" matTooltip="Change password" routerLink="/account/password">
+          <mat-icon>key</mat-icon>
+        </a>
+        }
+        <button (click)="signOut()" aria-label="Sign out" class="icon-btn" matTooltip="Sign out" type="button">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </div>
     }
 
     <div class="foot">
@@ -45,18 +47,18 @@
     </div>
   </aside>
 
-  <button type="button" class="backdrop" aria-label="Close menu" tabindex="-1" (click)="navOpen.set(false)"></button>
+  <button (click)="navOpen.set(false)" aria-label="Close menu" class="backdrop" tabindex="-1" type="button"></button>
 
   <div class="content">
     <div class="topbar">
-      <button class="menu" type="button" aria-label="Open menu" (click)="navOpen.set(true)">
+      <button (click)="navOpen.set(true)" aria-label="Open menu" class="menu" type="button">
         <mat-icon>menu</mat-icon>
       </button>
-      <app-brand-mark [compact]="true" />
+      <app-brand-mark [compact]="true"/>
     </div>
-    <app-announcement-bar />
+    <app-announcement-bar/>
     <main id="main">
-      <router-outlet />
+      <router-outlet/>
     </main>
   </div>
 </div>

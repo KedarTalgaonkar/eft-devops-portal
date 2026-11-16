@@ -1,6 +1,7 @@
 import { PipelineMetric } from './pipelines.models';
 
-export type SortKey = 'project' | 'environment' | 'totalBuilds' | 'success' | 'failed' | 'aborted' | 'successRate';
+export type SortKey =
+  'project' | 'environment' | 'totalBuilds' | 'success' | 'failed' | 'aborted' | 'successRate';
 
 export interface SortState {
   key: SortKey;
@@ -11,10 +12,17 @@ export interface SortState {
  * Filters by free text (project, client, owner, job) and sorts. Environments sort in catalogue order
  * ({@code envOrder}); unknown ones go last. Kept pure so it is easy to unit test.
  */
-export function filterAndSort(rows: PipelineMetric[], search: string, sort: SortState, envOrder: string[] = []): PipelineMetric[] {
+export function filterAndSort(
+  rows: PipelineMetric[],
+  search: string,
+  sort: SortState,
+  envOrder: string[] = [],
+): PipelineMetric[] {
   const q = search.trim().toLowerCase();
   const filtered = q
-    ? rows.filter((r) => [r.project, r.client, r.owner ?? '', r.jenkinsJob].some((v) => v.toLowerCase().includes(q)))
+    ? rows.filter((r) =>
+        [r.project, r.client, r.owner ?? '', r.jenkinsJob].some((v) => v.toLowerCase().includes(q)),
+      )
     : rows;
   const rank = (env: string) => {
     const i = envOrder.indexOf(env);
@@ -23,12 +31,25 @@ export function filterAndSort(rows: PipelineMetric[], search: string, sort: Sort
   return [...filtered].sort((a, b) => sort.dir * compare(a, b, sort.key, rank));
 }
 
-function compare(a: PipelineMetric, b: PipelineMetric, key: SortKey, rank: (env: string) => number): number {
+function compare(
+  a: PipelineMetric,
+  b: PipelineMetric,
+  key: SortKey,
+  rank: (env: string) => number,
+): number {
   switch (key) {
     case 'project':
-      return a.project.localeCompare(b.project) || a.client.localeCompare(b.client) || rank(a.environment) - rank(b.environment);
+      return (
+        a.project.localeCompare(b.project) ||
+        a.client.localeCompare(b.client) ||
+        rank(a.environment) - rank(b.environment)
+      );
     case 'environment':
-      return rank(a.environment) - rank(b.environment) || a.environment.localeCompare(b.environment) || a.project.localeCompare(b.project);
+      return (
+        rank(a.environment) - rank(b.environment) ||
+        a.environment.localeCompare(b.environment) ||
+        a.project.localeCompare(b.project)
+      );
     case 'successRate':
       return (a.successRate ?? -1) - (b.successRate ?? -1);
     default:

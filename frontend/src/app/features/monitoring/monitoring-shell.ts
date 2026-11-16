@@ -5,8 +5,12 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-monitoring-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Operations monitoring" subtitle="Grafana alerts and dashboards, Prometheus targets and host capacity"
-                      [logos]="['grafana', 'prometheus']" [tabs]="tabs" />
+    <app-module-shell
+      heading="Operations monitoring"
+      subtitle="Grafana alerts and dashboards, Prometheus targets and host capacity"
+      [logos]="['grafana', 'prometheus']"
+      [tabs]="tabs"
+    />
   `,
 })
 export class MonitoringShell {

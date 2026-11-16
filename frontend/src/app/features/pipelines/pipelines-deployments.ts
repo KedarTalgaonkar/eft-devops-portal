@@ -14,23 +14,46 @@ import { DeploymentHistoryEntry } from './pipelines.models';
   imports: [DatePipe, LoadState, StatusChip],
   template: `
     <div class="filters">
-      <input class="search" type="search" placeholder="Search project, client, version or user" aria-label="Search deployments"
-             [value]="search()" (input)="search.set($any($event.target).value)" />
+      <input
+        class="search"
+        type="search"
+        placeholder="Search project, client, version or user"
+        aria-label="Search deployments"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
       <span class="muted">{{ rows().length }} deployments</span>
     </div>
-    <app-load-state [loading]="history.isLoading()" [error]="history.error()" [empty]="history.hasValue() && rows().length === 0"
-                    what="deployment history" emptyText="No deployments in this period." (retry)="history.reload()" />
+    <app-load-state
+      [loading]="history.isLoading()"
+      [error]="history.error()"
+      [empty]="history.hasValue() && rows().length === 0"
+      what="deployment history"
+      emptyText="No deployments in this period."
+      (retry)="history.reload()"
+    />
     @if (rows().length) {
       <div class="table-wrap">
         <table class="data" aria-label="Deployment history">
           <thead>
-            <tr><th>Deployed</th><th>Project</th><th>Environment</th><th class="num">Build</th><th>Version</th><th>Result</th><th>By</th><th>Jenkins job</th></tr>
+            <tr>
+              <th>Deployed</th>
+              <th>Project</th>
+              <th>Environment</th>
+              <th class="num">Build</th>
+              <th>Version</th>
+              <th>Result</th>
+              <th>By</th>
+              <th>Jenkins job</th>
+            </tr>
           </thead>
           <tbody>
             @for (d of rows(); track d.jenkinsJob + d.buildNumber) {
               <tr>
                 <td>{{ d.deployedAt | date: 'dd MMM yyyy, HH:mm' }}</td>
-                <td><strong>{{ d.project }}</strong> <span class="muted">· {{ d.client }}</span></td>
+                <td>
+                  <strong>{{ d.project }}</strong> <span class="muted">· {{ d.client }}</span>
+                </td>
                 <td>{{ envs.name(d.environment) }}</td>
                 <td class="num">
                   @if (d.url) {
@@ -56,13 +79,21 @@ export class PipelinesDeploymentsPage {
   protected readonly envs = inject(Environments);
   protected readonly search = signal('');
   protected readonly history = httpResource<DeploymentHistoryEntry[]>(() =>
-    apiUrl('pipelines/deployments', { env: this.filters.env(), days: this.filters.days(), limit: 500 }),
+    apiUrl('pipelines/deployments', {
+      env: this.filters.env(),
+      days: this.filters.days(),
+      limit: 500,
+    }),
   );
   protected readonly rows = computed(() => {
     const list = this.history.hasValue() ? this.history.value() : [];
     const q = this.search().trim().toLowerCase();
     return q
-      ? list.filter((d) => [d.project, d.client, d.version ?? '', d.triggeredBy ?? ''].some((v) => v.toLowerCase().includes(q)))
+      ? list.filter((d) =>
+          [d.project, d.client, d.version ?? '', d.triggeredBy ?? ''].some((v) =>
+            v.toLowerCase().includes(q),
+          ),
+        )
       : list;
   });
 }

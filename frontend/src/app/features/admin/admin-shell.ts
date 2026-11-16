@@ -5,7 +5,11 @@ import { ModuleShell, ModuleTab } from '../../shared/module-shell';
   selector: 'app-admin-shell',
   imports: [ModuleShell],
   template: `
-    <app-module-shell heading="Administration" subtitle="Local accounts, the security audit trail and AI usage (administrators only)" [tabs]="tabs" />
+    <app-module-shell
+      heading="Administration"
+      subtitle="Local accounts, the security audit trail and AI usage (administrators only)"
+      [tabs]="tabs"
+    />
   `,
 })
 export class AdminShell {

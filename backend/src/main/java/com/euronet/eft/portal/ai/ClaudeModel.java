@@ -22,12 +22,13 @@ import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.anthropic.models.messages.StructuredOutputConfig;
 import com.anthropic.models.messages.StructuredTextBlock;
 import com.anthropic.models.messages.TextBlockParam;
-import java.time.Duration;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Calls Claude through the official Anthropic Java SDK: direct API, Amazon Bedrock or Microsoft Foundry, chosen by
@@ -46,23 +47,28 @@ public class ClaudeModel {
         this.props = props;
     }
 
-    public record Reply<T>(T value, String model, long inputTokens, long outputTokens, long cacheReadTokens) {
+    private static OutputConfig.Effort effort(AiTask.Effort effort) {
+        return switch (effort) {
+            case LOW -> OutputConfig.Effort.LOW;
+            case MEDIUM -> OutputConfig.Effort.MEDIUM;
+            case HIGH -> OutputConfig.Effort.HIGH;
+        };
     }
 
     public <T> Reply<T> structured(String system, String input, Class<T> type, AiTask.Effort effort, int maxTokens) {
         String model = modelId();
         StructuredMessageCreateParams<T> params = MessageCreateParams.builder()
-                .model(model)
-                .maxTokens(maxTokens)
-                // stable instructions first and cacheable; the masked data goes in the user turn
-                .systemOfTextBlockParams(List.of(TextBlockParam.builder()
-                        .text(system)
-                        .cacheControl(CacheControlEphemeral.builder().build())
-                        .build()))
-                .addUserMessage(input)
-                .outputConfig(type)
-                .outputConfig(StructuredOutputConfig.<T>builder().format(type).effort(effort(effort)).build())
-                .build();
+            .model(model)
+            .maxTokens(maxTokens)
+            // stable instructions first and cacheable; the masked data goes in the user turn
+            .systemOfTextBlockParams(List.of(TextBlockParam.builder()
+                .text(system)
+                .cacheControl(CacheControlEphemeral.builder().build())
+                .build()))
+            .addUserMessage(input)
+            .outputConfig(type)
+            .outputConfig(StructuredOutputConfig.<T>builder().format(type).effort(effort(effort)).build())
+            .build();
         StructuredMessage<T> response;
         try {
             response = client().messages().create(params);
@@ -95,16 +101,18 @@ public class ClaudeModel {
             throw new AiException(HttpStatus.BAD_GATEWAY, "The AI answer was too long and was cut off. Try again.");
         }
         T value = response.content().stream()
-                .flatMap(b -> b.text().stream())
-                .map(StructuredTextBlock::text)
-                .findFirst()
-                .orElseThrow(() -> new AiException(HttpStatus.BAD_GATEWAY, "The AI service returned an empty answer."));
+            .flatMap(b -> b.text().stream())
+            .map(StructuredTextBlock::text)
+            .findFirst()
+            .orElseThrow(() -> new AiException(HttpStatus.BAD_GATEWAY, "The AI service returned an empty answer."));
         var usage = response.usage();
         return new Reply<>(value, props.model(), usage.inputTokens(), usage.outputTokens(),
-                usage.cacheReadInputTokens().orElse(0L));
+            usage.cacheReadInputTokens().orElse(0L));
     }
 
-    /** Model id as the provider expects it. */
+    /**
+     * Model id as the provider expects it.
+     */
     String modelId() {
         String model = props.model();
         if (props.provider() == AiProperties.Provider.BEDROCK && !model.contains(".")) {
@@ -113,15 +121,9 @@ public class ClaudeModel {
         return model;
     }
 
-    private static OutputConfig.Effort effort(AiTask.Effort effort) {
-        return switch (effort) {
-            case LOW -> OutputConfig.Effort.LOW;
-            case MEDIUM -> OutputConfig.Effort.MEDIUM;
-            case HIGH -> OutputConfig.Effort.HIGH;
-        };
-    }
-
-    /** True when LIVE mode has what it needs to try a call (Bedrock/Foundry credentials are checked on first use). */
+    /**
+     * True when LIVE mode has what it needs to try a call (Bedrock/Foundry credentials are checked on first use).
+     */
     public boolean configured() {
         return props.provider() != AiProperties.Provider.ANTHROPIC || (props.apiKey() != null && !props.apiKey().isBlank());
     }
@@ -141,14 +143,14 @@ public class ClaudeModel {
 
     private AnthropicClient build() {
         AnthropicOkHttpClient.Builder builder = AnthropicOkHttpClient.builder()
-                .timeout(Duration.ofSeconds(100))
-                .maxRetries(2);
+            .timeout(Duration.ofSeconds(100))
+            .maxRetries(2);
         try {
             switch (props.provider()) {
                 case ANTHROPIC -> {
                     if (!configured()) {
                         throw new AiException(HttpStatus.SERVICE_UNAVAILABLE,
-                                "AI is in live mode but ANTHROPIC_API_KEY is not set. Tell an administrator.");
+                            "AI is in live mode but ANTHROPIC_API_KEY is not set. Tell an administrator.");
                     }
                     builder.apiKey(props.apiKey());
                 }
@@ -160,8 +162,11 @@ public class ClaudeModel {
         } catch (RuntimeException e) {
             log.warn("Could not set up the {} AI client: {}", props.provider(), e.getMessage());
             throw new AiException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "The AI service is not configured correctly (" + props.provider().name().toLowerCase() + "). Tell an administrator.", e);
+                "The AI service is not configured correctly (" + props.provider().name().toLowerCase() + "). Tell an administrator.", e);
         }
         return builder.build();
+    }
+
+    public record Reply<T>(T value, String model, long inputTokens, long outputTokens, long cacheReadTokens) {
     }
 }
