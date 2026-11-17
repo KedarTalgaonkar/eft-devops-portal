@@ -23,8 +23,7 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req) {
-        return ResponseEntity.status(status)
-            .body(ApiError.of(status.value(), status.getReasonPhrase(), message, req.getRequestURI()));
+        return ResponseEntity.status(status).body(ApiError.of(status.value(), status.getReasonPhrase(), message, req.getRequestURI()));
     }
 
     @ExceptionHandler({NotFoundException.class, NoResourceFoundException.class})
@@ -50,10 +49,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> typeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
-        String allowed = ex.getRequiredType() != null && ex.getRequiredType().isEnum()
-            ? " (allowed: " + String.join(", ", java.util.Arrays.stream(ex.getRequiredType().getEnumConstants())
-            .map(String::valueOf).toList()) + ")"
-            : "";
+        String allowed = ex.getRequiredType() != null && ex.getRequiredType().isEnum() ? " (allowed: " + String.join(", ", java.util.Arrays.stream(ex.getRequiredType().getEnumConstants()).map(String::valueOf).toList()) + ")" : "";
         return build(HttpStatus.BAD_REQUEST, "Invalid value for parameter '" + ex.getName() + "'" + allowed, req);
     }
 
@@ -64,9 +60,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> invalid(MethodArgumentNotValidException ex, HttpServletRequest req) {
-        var details = ex.getBindingResult().getFieldErrors().stream()
-            .map(f -> f.getField() + ": " + f.getDefaultMessage())
-            .toList();
+        var details = ex.getBindingResult().getFieldErrors().stream().map(f -> f.getField() + ": " + f.getDefaultMessage()).toList();
         var body = new ApiError(Instant.now(), 400, "Bad Request", "Validation failed", req.getRequestURI(), details);
         return ResponseEntity.badRequest().body(body);
     }
