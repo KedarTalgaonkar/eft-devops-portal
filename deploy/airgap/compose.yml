@@ -1,0 +1,96 @@
+# Air-gapped stack: runs only from images loaded with install.sh, never builds or pulls.
+#   docker compose --env-file .env up -d
+#   browser -> frontend (nginx) :${PORTAL_PORT} -> backend :8080 -> postgres
+# Settings: .env (copied from env.example by install.sh). See README.md.
+name: eft-devops-portal
+
+x-integrations: &integrations
+  JENKINS_MODE: ${JENKINS_MODE:-mock}
+  JENKINS_URL: ${JENKINS_URL:-}
+  JENKINS_USER: ${JENKINS_USER:-}
+  JENKINS_TOKEN: ${JENKINS_TOKEN:-}
+  JENKINS_JOB_PATTERN: ${JENKINS_JOB_PATTERN:-}
+  GITHUB_MODE: ${GITHUB_MODE:-mock}
+  GITHUB_URL: ${GITHUB_URL:-}
+  GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+  SONAR_MODE: ${SONAR_MODE:-mock}
+  SONAR_URL: ${SONAR_URL:-}
+  SONAR_TOKEN: ${SONAR_TOKEN:-}
+  ARTIFACTORY_MODE: ${ARTIFACTORY_MODE:-mock}
+  ARTIFACTORY_URL: ${ARTIFACTORY_URL:-}
+  ARTIFACTORY_TOKEN: ${ARTIFACTORY_TOKEN:-}
+  MONITORING_MODE: ${MONITORING_MODE:-mock}
+  GRAFANA_URL: ${GRAFANA_URL:-}
+  GRAFANA_TOKEN: ${GRAFANA_TOKEN:-}
+  PROMETHEUS_URL: ${PROMETHEUS_URL:-}
+  SBOM_MODE: ${SBOM_MODE:-mock}
+  HEALTH_PROBE_MODE: ${HEALTH_PROBE_MODE:-mock}
+
+x-security: &security
+  ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+  OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+  OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+  PORTAL_SSO_LABEL: ${PORTAL_SSO_LABEL:-}
+  PORTAL_LOCAL_LOGIN: ${PORTAL_LOCAL_LOGIN:-true}
+  PORTAL_DEFAULT_ROLE: ${PORTAL_DEFAULT_ROLE:-VIEWER}
+  PORTAL_BOOTSTRAP_ADMIN_USERNAME: ${PORTAL_BOOTSTRAP_ADMIN_USERNAME:-admin}
+  PORTAL_BOOTSTRAP_ADMIN_PASSWORD: ${PORTAL_BOOTSTRAP_ADMIN_PASSWORD:-}
+  PORTAL_COOKIE_SECURE: ${PORTAL_COOKIE_SECURE:-false}
+  PORTAL_SESSION_IDLE_TIMEOUT: ${PORTAL_SESSION_IDLE_TIMEOUT:-30m}
+  PORTAL_SESSION_MAX_AGE: ${PORTAL_SESSION_MAX_AGE:-10h}
+  PORTAL_API_DOCS: ${PORTAL_API_DOCS:-false}
+
+# No internet: AI is off unless an internal model endpoint is reachable (docs/ai.md)
+x-ai: &ai
+  AI_MODE: ${AI_MODE:-off}
+  AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+  AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  AI_DIGEST_ENABLED: ${AI_DIGEST_ENABLED:-false}
+  AI_DIGEST_ZONE: ${AI_DIGEST_ZONE:-Asia/Kolkata}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    pull_policy: never
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eftportal}
+      POSTGRES_USER: ${POSTGRES_USER:-eft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    image: eft-devops-portal-backend:${PORTAL_VERSION:?set PORTAL_VERSION in .env}
+    pull_policy: never
+    environment:
+      <<: [ *integrations, *security, *ai ]
+      # empty = clean database, local accounts; sso-entra only if Entra ID is reachable
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      TZ: ${TZ:-Asia/Kolkata}
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-eftportal}
+      DB_USER: ${POSTGRES_USER:-eft}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: eft-devops-portal-frontend:${PORTAL_VERSION:?set PORTAL_VERSION in .env}
+    pull_policy: never
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${PORTAL_BIND_ADDRESS:-0.0.0.0}:${PORTAL_PORT:-8081}:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

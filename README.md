@@ -140,6 +140,10 @@ items: [docs/security.md](docs/security.md).
 If Maven Central or npmjs is blocked inside containers, set `MAVEN_MIRROR_URL` and/or `NPM_REGISTRY` in `.env`
 (for example your Artifactory virtual repositories) and rebuild.
 
+## Air-gapped servers
+
+`bash deploy/airgap/build-bundle.sh` builds the images on a machine with internet and packs them, with PostgreSQL and a pull-free compose file, into `dist/eft-portal-airgap-<version>.tar.gz`. Copy it to the offline server and follow [deploy/airgap/README.md](deploy/airgap/README.md).
+
 ## Layout
 
 ```
