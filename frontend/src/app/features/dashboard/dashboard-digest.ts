@@ -31,7 +31,7 @@ type Digest = StoredInsight<ExecutiveDigest>;
       <div class="card off">
         <mat-icon aria-hidden="true">auto_awesome</mat-icon>
         <div>
-          <strong>AI features are switched off on this portal.</strong>
+          <strong>AI features are not available on this portal right now.</strong>
           <p class="muted">An administrator can turn them on with AI_MODE (see docs/ai.md).</p>
         </div>
       </div>

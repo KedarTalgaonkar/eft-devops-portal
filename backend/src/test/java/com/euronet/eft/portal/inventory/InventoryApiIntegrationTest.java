@@ -14,7 +14,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static com.euronet.eft.portal.security.Xsrf.xsrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -79,7 +81,7 @@ class InventoryApiIntegrationTest {
             .orElseThrow();
         assertThat(acs.getJavaVersion()).isEqualTo("8u321");
 
-        mvc.perform(put("/api/inventory/deployments/{id}", acs.getId()).with(xsrf())
+        mvc.perform(put("/api/inventory/deployments/{id}/jenkins-job", acs.getId()).with(xsrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"jenkinsJob\":\"EFT/acs/uat-deploy\"}"))
             .andExpect(status().isOk())
@@ -118,6 +120,75 @@ class InventoryApiIntegrationTest {
             .andExpect(jsonPath("$[?(@.field == 'baseUrl')].newValue", hasItem("http://preprod2-recon.example.internal:8080")));
         mvc.perform(get("/api/pipelines/metrics").param("env", "perf"))
             .andExpect(jsonPath("$[*].jenkinsJob", hasItem("recon-engine-PERF")));
+    }
+
+    @Test
+    void applicationsAndPathsCanBeAddedEditedAndRemovedFromThePortal() throws Exception {
+        String name = "UI App " + java.util.UUID.randomUUID().toString().substring(0, 8);
+        String app = "{\"name\":\"" + name + "\",\"client\":\"Test Bank\",\"owner\":\"Asha\",\"repositories\":[\"eft-org/ui-app\"]}";
+        String created = mvc.perform(post("/api/inventory/applications").with(xsrf())
+                .contentType(MediaType.APPLICATION_JSON).content(app))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.owner").value("Asha"))
+            .andExpect(jsonPath("$.repositories", hasItem("eft-org/ui-app")))
+            .andReturn().getResponse().getContentAsString();
+        long appId = Long.parseLong(created.replaceAll("(?s).*?\"id\":(\\d+).*", "$1"));
+
+        // same name + client again is refused
+        mvc.perform(post("/api/inventory/applications").with(xsrf()).contentType(MediaType.APPLICATION_JSON).content(app))
+            .andExpect(status().isBadRequest());
+
+        mvc.perform(put("/api/inventory/applications/{id}", appId).with(xsrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"client\":\"Test Bank\",\"owner\":\"Ravi\",\"repositories\":[\"eft-org/ui-app\"]}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.owner").value("Ravi"));
+
+        String path = "{\"environment\":\"sit\",\"contextName\":\"UIAPP\",\"baseUrl\":\"http://sit-ui.example.internal:8080/\","
+            + "\"tomcatVersion\":\"9.0.85\",\"javaVersion\":\"17\",\"tomcatAdminDone\":true,\"buildXmlDone\":false}";
+        String dep = mvc.perform(post("/api/inventory/applications/{id}/deployments", appId).with(xsrf())
+                .contentType(MediaType.APPLICATION_JSON).content(path))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.environment").value("SIT"))
+            .andExpect(jsonPath("$.platform").value("TOMCAT"))
+            .andExpect(jsonPath("$.contextUrl").value("http://sit-ui.example.internal:8080/UIAPP/"))
+            .andReturn().getResponse().getContentAsString();
+        long depId = Long.parseLong(dep.replaceAll("(?s).*?\"id\":(\\d+).*", "$1"));
+
+        // duplicate path, unknown environment and a bad URL are refused
+        mvc.perform(post("/api/inventory/applications/{id}/deployments", appId).with(xsrf())
+                .contentType(MediaType.APPLICATION_JSON).content(path))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/inventory/applications/{id}/deployments", appId).with(xsrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"environment\":\"MARS\",\"contextName\":\"X\"}"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/inventory/applications/{id}/deployments", appId).with(xsrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"environment\":\"UAT\",\"baseUrl\":\"javascript:alert(1)\"}"))
+            .andExpect(status().isBadRequest());
+
+        mvc.perform(put("/api/inventory/deployments/{id}", depId).with(xsrf()).contentType(MediaType.APPLICATION_JSON)
+                .content(path.replace("\"buildXmlDone\":false", "\"buildXmlDone\":true").replace("\"17\"", "\"21\"")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.javaVersion").value("21"))
+            .andExpect(jsonPath("$.buildXmlDone").value(true));
+
+        mvc.perform(delete("/api/inventory/deployments/{id}", depId).with(xsrf()))
+            .andExpect(status().isNoContent());
+        mvc.perform(get("/api/inventory/applications/{id}", appId))
+            .andExpect(jsonPath("$.deployments").isEmpty());
+
+        mvc.perform(get("/api/inventory/changes").param("applicationId", String.valueOf(appId)))
+            .andExpect(jsonPath("$[?(@.field == 'owner')].newValue", hasItem("Ravi")))
+            .andExpect(jsonPath("$[?(@.field == 'javaVersion')].newValue", hasItem("21")))
+            .andExpect(jsonPath("$[*].changeType", hasItem("DEPLOYMENT_REMOVED")))
+            .andExpect(jsonPath("$[*].changedBy", hasItem("it-editor")));
+    }
+
+    @Test
+    @WithMockUser(username = "it-viewer", roles = "VIEWER")
+    void viewersCannotEditTheInventory() throws Exception {
+        mvc.perform(post("/api/inventory/applications").with(xsrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Nope\"}"))
+            .andExpect(status().isForbidden());
     }
 
     @Test

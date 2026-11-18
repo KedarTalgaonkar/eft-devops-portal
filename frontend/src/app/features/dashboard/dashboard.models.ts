@@ -22,7 +22,8 @@ export interface DashboardOverview {
   owners: number;
   clients: number;
   environments: EnvironmentCount[];
-  pipelines: PipelineTotals;
+  /** null when the user has no access to Pipelines. */
+  pipelines: PipelineTotals | null;
   services: HealthSummary;
   firingAlerts: number;
   failingQualityGates: number;

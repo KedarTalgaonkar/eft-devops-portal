@@ -20,6 +20,15 @@
   </button>
   }
   @if (canEdit) {
+  <span class="spacer"></span>
+  <button (click)="addApplication()" class="btn" type="button">
+    <mat-icon>add_box</mat-icon>
+    Add application
+  </button>
+  <button (click)="addPath()" class="btn" type="button">
+    <mat-icon>add_link</mat-icon>
+    Add deployment path
+  </button>
   <input #file (change)="upload(file)" accept=".xlsx" hidden type="file"/>
   <button (click)="file.click()" [disabled]="uploading()" class="btn primary" type="button">
     <mat-icon>upload_file</mat-icon>
@@ -70,6 +79,9 @@
       <th>build.xml</th>
       <th>Jenkins job</th>
       <th>Repositories</th>
+      @if (canEdit) {
+      <th><span class="sr-only">Actions</span></th>
+      }
     </tr>
     </thead>
     <tbody>
@@ -136,6 +148,18 @@
                 </span>
         }
       </td>
+      @if (canEdit) {
+      <td class="actions">
+        <button (click)="editPath(d)" [attr.aria-label]="'Edit ' + d.environment + ' path of ' + d.application" class="icon-btn"
+                matTooltip="Edit this deployment path" type="button"><mat-icon>edit_note</mat-icon></button>
+        <button (click)="editApplication(d)" [attr.aria-label]="'Edit application ' + d.application" class="icon-btn"
+                matTooltip="Edit application (name, client, owner, repositories)" type="button"><mat-icon>apps</mat-icon></button>
+        <button (click)="addPath(d.applicationId)" [attr.aria-label]="'Add another path to ' + d.application" class="icon-btn"
+                matTooltip="Add another path for this application" type="button"><mat-icon>add_link</mat-icon></button>
+        <button (click)="removePath(d)" [attr.aria-label]="'Remove ' + d.environment + ' path of ' + d.application" class="icon-btn danger"
+                matTooltip="Remove this deployment path" type="button"><mat-icon>delete</mat-icon></button>
+      </td>
+      }
     </tr>
     }
     </tbody>

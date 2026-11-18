@@ -154,7 +154,7 @@ export class DashboardServicesPage {
   readonly envParam = input<string | undefined>(undefined, { alias: 'env' });
   readonly stateParam = input<string | undefined>(undefined, { alias: 'state' });
   protected readonly envs = inject(Environments);
-  protected readonly canProbe = inject(Auth).can('EDITOR');
+  protected readonly canProbe = inject(Auth).canEdit('DASHBOARD');
   protected readonly search = linkedSignal(() => this.q() ?? '');
   protected readonly env = linkedSignal(() => this.envParam() ?? '');
   protected readonly state = linkedSignal<HealthState | ''>(() =>

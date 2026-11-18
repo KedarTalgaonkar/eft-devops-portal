@@ -52,7 +52,7 @@ export interface ChangeView {
   deploymentId: number | null;
   environment: Environment | null;
   contextName: string | null;
-  changeType: 'APPLICATION_ADDED' | 'DEPLOYMENT_ADDED' | 'FIELD_CHANGED';
+  changeType: 'APPLICATION_ADDED' | 'DEPLOYMENT_ADDED' | 'DEPLOYMENT_REMOVED' | 'FIELD_CHANGED';
   field: string | null;
   oldValue: string | null;
   newValue: string | null;

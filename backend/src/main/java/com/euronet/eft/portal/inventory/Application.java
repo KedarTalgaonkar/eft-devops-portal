@@ -98,6 +98,14 @@ public class Application {
         return client;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setClient(String client) {
+        this.client = client == null ? "" : client;
+    }
+
     public String getOwner() {
         return owner;
     }

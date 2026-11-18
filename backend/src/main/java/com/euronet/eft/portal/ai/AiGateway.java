@@ -74,7 +74,7 @@ public class AiGateway {
     }
 
     private <T> AiOutcome<T> run(AiTask<T> task, String username, String source, boolean system) {
-        if (!props.enabled()) {
+        if (!available()) {
             throw AiException.disabled();
         }
         if (!system && usage.callsToday(username) >= props.userDailyLimit()) {
@@ -154,10 +154,23 @@ public class AiGateway {
 
     // ---------- status for the UI ----------
 
+    /**
+     * True only when AI can actually answer: switched on and, in live mode, with provider credentials. When false the
+     * portal works as before; AI buttons and the digest tab are simply hidden.
+     */
+    public boolean available() {
+        return props.enabled() && (props.mode() != AiProperties.Mode.LIVE || claude.configured());
+    }
+
     public AiStatus status() {
         boolean live = props.mode() == AiProperties.Mode.LIVE;
+        if (live && !claude.configured()) {
+            return new AiStatus(false, props.mode().name(), props.provider().name(), props.model(), false,
+                props.digest().enabled(), props.userDailyLimit(),
+                "AI is unavailable: live mode is on but the provider credentials are missing. Everything else works normally.");
+        }
         String label = switch (props.mode()) {
-            case OFF -> "AI features are off";
+            case OFF -> "AI features are off. Everything else works normally.";
             case MOCK -> "Sample AI answers (mock mode, nothing is sent outside the portal)";
             case LIVE -> "Claude " + props.model() + " via " + switch (props.provider()) {
                 case ANTHROPIC -> "Anthropic API";

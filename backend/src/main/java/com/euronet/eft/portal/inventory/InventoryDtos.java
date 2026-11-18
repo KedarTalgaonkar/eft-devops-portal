@@ -1,5 +1,6 @@
 package com.euronet.eft.portal.inventory;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -49,6 +50,31 @@ public final class InventoryDtos {
      * Only the Jenkins job is editable per deployment; everything else comes from the Excel import.
      */
     public record UpdateDeploymentRequest(@Size(max = 300) String jenkinsJob) {
+    }
+
+    /**
+     * Create or edit an application from the portal (name + client must stay unique).
+     */
+    public record ApplicationRequest(
+        @NotBlank @Size(max = 200) String name,
+        @Size(max = 200) String client,
+        @Size(max = 100) String owner,
+        @Size(max = 50) List<@Size(min = 1, max = 200) String> repositories) {
+    }
+
+    /**
+     * Create or edit a deployment path from the portal. The environment must already exist.
+     */
+    public record DeploymentRequest(
+        @NotBlank @Size(max = 32) String environment,
+        @Size(max = 200) String contextName,
+        @Size(max = 30) String platform,
+        @Size(max = 500) String baseUrl,
+        @Size(max = 50) String tomcatVersion,
+        @Size(max = 50) String javaVersion,
+        boolean tomcatAdminDone,
+        boolean buildXmlDone,
+        @Size(max = 300) String jenkinsJob) {
     }
 
     public record UpdateRepositoriesRequest(

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { apiUrl } from '../../core/api';
 import { Environments } from '../../core/environments';
+import { Auth } from '../../core/auth';
 import { LoadState } from '../../shared/load-state';
 import { StatusChip } from '../../shared/status-chip';
 import { EnvironmentCell, EnvironmentStatusRow } from './dashboard.models';
@@ -68,6 +69,7 @@ import { EnvironmentCell, EnvironmentStatusRow } from './dashboard.models';
                           "
                           >{{ c.health === 'DOWN' ? '▲' : c.health === 'UP' ? '●' : '○' }}</span
                         >
+                        @if (seesPipelines) {
                         <a
                           [routerLink]="'/pipelines/all'"
                           [queryParams]="{ q: row.project }"
@@ -80,6 +82,7 @@ import { EnvironmentCell, EnvironmentStatusRow } from './dashboard.models';
                         </a>
                         @if (c.successRate !== null) {
                           <span class="muted num">{{ c.successRate }}%</span>
+                        }
                         }
                       </span>
                     } @else {
@@ -124,6 +127,8 @@ import { EnvironmentCell, EnvironmentStatusRow } from './dashboard.models';
   `,
 })
 export class DashboardEnvironmentsPage {
+  /** Build results are part of Pipelines: hidden without access to it. */
+  protected readonly seesPipelines = inject(Auth).canView('PIPELINES');
   protected readonly envs = inject(Environments);
   protected readonly search = signal('');
   protected readonly grid = httpResource<EnvironmentStatusRow[]>(() =>

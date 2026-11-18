@@ -14,11 +14,27 @@ export interface SessionUser {
   mustChangePassword: boolean;
 }
 
+export type PortalModule =
+  | 'DASHBOARD'
+  | 'PIPELINES'
+  | 'SOURCE_CODE'
+  | 'ARTIFACTS'
+  | 'QUALITY'
+  | 'SBOM'
+  | 'MONITORING'
+  | 'INVENTORY';
+
+export type AccessLevel = 'NONE' | 'VIEW' | 'EDIT';
+
 export interface AuthSession {
   authenticated: boolean;
   user: SessionUser | null;
   providers: { ssoEnabled: boolean; ssoLabel: string; localEnabled: boolean };
+  /** Effective access per module from the user's access groups, capped by role (set by the backend). */
+  modules?: Partial<Record<PortalModule, AccessLevel>>;
 }
+
+const LEVEL: Record<AccessLevel, number> = { NONE: 0, VIEW: 1, EDIT: 2 };
 
 const RANK: Record<PortalRole, number> = { VIEWER: 1, EDITOR: 2, ADMIN: 3 };
 
@@ -60,6 +76,24 @@ export class Auth {
   can(role: PortalRole): boolean {
     const roles = this.user()?.roles ?? [];
     return roles.some((r) => RANK[r] >= RANK[role]);
+  }
+
+  /** Access to a module. Without group data (older backend) the role decides, as before. */
+  access(module: PortalModule): AccessLevel {
+    const level = this.state()?.modules?.[module];
+    if (level) {
+      return level;
+    }
+    return this.can('EDITOR') ? 'EDIT' : this.can('VIEWER') ? 'VIEW' : 'NONE';
+  }
+
+  canView(module: PortalModule): boolean {
+    return LEVEL[this.access(module)] >= LEVEL.VIEW;
+  }
+
+  /** May change data in this module (the backend enforces the same rule). */
+  canEdit(module: PortalModule): boolean {
+    return LEVEL[this.access(module)] >= LEVEL.EDIT;
   }
 
   ssoUrl(returnTo: string): string {

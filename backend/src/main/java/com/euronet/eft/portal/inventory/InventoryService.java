@@ -155,6 +155,164 @@ public class InventoryService {
         return getApplication(applicationId);
     }
 
+    // ---------------- manual edits from the portal (Editor) ----------------
+
+    @Transactional
+    public ApplicationDetail createApplication(InventoryDtos.ApplicationRequest r) {
+        String name = r.name().strip();
+        String client = blankToEmpty(r.client());
+        if (applications.findByNameAndClient(name, client).isPresent()) {
+            throw new IllegalArgumentException("An application '" + name + "' for client '" + client + "' already exists");
+        }
+        Application a = applications.save(new Application(name, client, blankToNull(r.owner())));
+        changes.save(new InventoryChange(a.getId(), null, Type.APPLICATION_ADDED, null, null,
+            a.getName() + " / " + a.getClient(), Source.PORTAL));
+        if (r.repositories() != null) {
+            r.repositories().stream().map(String::strip).filter(s -> !s.isEmpty()).forEach(a.getRepositories()::add);
+        }
+        applications.flush();
+        return getApplication(a.getId());
+    }
+
+    @Transactional
+    public ApplicationDetail updateApplication(long id, InventoryDtos.ApplicationRequest r) {
+        Application a = applications.findById(id).orElseThrow(() -> new NotFoundException("Application", id));
+        String name = r.name().strip();
+        String client = blankToEmpty(r.client());
+        applications.findByNameAndClient(name, client)
+            .filter(other -> !other.getId().equals(a.getId()))
+            .ifPresent(other -> {
+                throw new IllegalArgumentException("An application '" + name + "' for client '" + client + "' already exists");
+            });
+        appField(a, "name", a.getName(), name, a::setName);
+        appField(a, "client", a.getClient(), client, a::setClient);
+        appField(a, "owner", a.getOwner(), blankToNull(r.owner()), a::setOwner);
+        if (r.repositories() != null) {
+            updateRepositories(id, r.repositories());
+        }
+        applications.flush();
+        return getApplication(id);
+    }
+
+    @Transactional
+    public DeploymentView createDeployment(long applicationId, InventoryDtos.DeploymentRequest r) {
+        Application a = applications.findById(applicationId)
+            .orElseThrow(() -> new NotFoundException("Application", applicationId));
+        String env = existingEnvironment(r.environment());
+        String context = blankToEmpty(r.contextName());
+        requireUniquePath(a, env, context, null);
+        Deployment d = a.addDeployment(new Deployment(env, context));
+        apply(d, r);
+        deployments.saveAndFlush(d);
+        changes.save(new InventoryChange(a.getId(), d.getId(), Type.DEPLOYMENT_ADDED, null, null,
+            env + " " + context + " " + Objects.toString(d.getBaseUrl(), ""), Source.PORTAL));
+        return toView(d, sharedNames());
+    }
+
+    @Transactional
+    public DeploymentView updateDeployment(long id, InventoryDtos.DeploymentRequest r) {
+        Deployment d = deployments.findById(id).orElseThrow(() -> new NotFoundException("Deployment", id));
+        String env = existingEnvironment(r.environment());
+        String context = blankToEmpty(r.contextName());
+        requireUniquePath(d.getApplication(), env, context, d.getId());
+        depField(d, "environment", d.getEnvironment(), env, d::setEnvironment);
+        depField(d, "contextName", d.getContextName(), context, d::setContextName);
+        depField(d, "platform", d.getPlatform(), platform(r.platform()), d::setPlatform);
+        depField(d, "baseUrl", d.getBaseUrl(), baseUrl(r.baseUrl()), d::setBaseUrl);
+        depField(d, "tomcatVersion", d.getTomcatVersion(), blankToNull(r.tomcatVersion()), d::setTomcatVersion);
+        depField(d, "javaVersion", d.getJavaVersion(), blankToNull(r.javaVersion()), d::setJavaVersion);
+        depField(d, "tomcatAdminDone", String.valueOf(d.isTomcatAdminDone()), String.valueOf(r.tomcatAdminDone()),
+            v -> d.setTomcatAdminDone(Boolean.parseBoolean(v)));
+        depField(d, "buildXmlDone", String.valueOf(d.isBuildXmlDone()), String.valueOf(r.buildXmlDone()),
+            v -> d.setBuildXmlDone(Boolean.parseBoolean(v)));
+        depField(d, "jenkinsJob", d.getJenkinsJob(), blankToNull(r.jenkinsJob()), d::setJenkinsJob);
+        deployments.flush();
+        return toView(d, sharedNames());
+    }
+
+    @Transactional
+    public void deleteDeployment(long id) {
+        Deployment d = deployments.findById(id).orElseThrow(() -> new NotFoundException("Deployment", id));
+        Application a = d.getApplication();
+        changes.save(new InventoryChange(a.getId(), d.getId(), Type.DEPLOYMENT_REMOVED, null,
+            d.getEnvironment() + " " + d.getContextName() + " " + Objects.toString(d.getBaseUrl(), ""), null, Source.PORTAL));
+        a.getDeployments().remove(d);
+        deployments.delete(d);
+    }
+
+    private void apply(Deployment d, InventoryDtos.DeploymentRequest r) {
+        d.setPlatform(platform(r.platform()));
+        d.setBaseUrl(baseUrl(r.baseUrl()));
+        d.setTomcatVersion(blankToNull(r.tomcatVersion()));
+        d.setJavaVersion(blankToNull(r.javaVersion()));
+        d.setTomcatAdminDone(r.tomcatAdminDone());
+        d.setBuildXmlDone(r.buildXmlDone());
+        d.setJenkinsJob(blankToNull(r.jenkinsJob()));
+    }
+
+    /** Only environments that exist; new ones come from the Excel import or Inventory &gt; Environments. */
+    private String existingEnvironment(String raw) {
+        String env = EnvironmentCodes.require(raw);
+        if (environments.list().stream().noneMatch(e -> e.code().equals(env))) {
+            throw new IllegalArgumentException("Unknown environment '" + raw + "'");
+        }
+        return env;
+    }
+
+    private static void requireUniquePath(Application a, String env, String context, Long self) {
+        boolean clash = a.getDeployments().stream()
+            .anyMatch(d -> !d.getId().equals(self) && d.getEnvironment().equals(env) && d.getContextName().equalsIgnoreCase(context));
+        if (clash) {
+            throw new IllegalArgumentException(a.getName() + " already has a " + env + " path for context '"
+                + (context.isEmpty() ? "(root)" : context) + "'");
+        }
+    }
+
+    private static String platform(String raw) {
+        String p = raw == null || raw.isBlank() ? "TOMCAT" : raw.strip().toUpperCase(Locale.ROOT);
+        if (!p.matches("[A-Z0-9_-]{1,30}")) {
+            throw new IllegalArgumentException("Platform may only use letters, digits, '-' and '_'");
+        }
+        return p;
+    }
+
+    /** http(s)://host[:port] without a trailing slash; the context is added separately. */
+    private static String baseUrl(String raw) {
+        String url = blankToNull(raw);
+        if (url == null) {
+            return null;
+        }
+        if (!url.matches("(?i)https?://[^\\s/?#]+(/[^\\s?#]*)?")) {
+            throw new IllegalArgumentException("Base URL must look like http://host:port");
+        }
+        return url.replaceAll("/+$", "");
+    }
+
+    private void appField(Application a, String field, String oldValue, String newValue,
+                          java.util.function.Consumer<String> setter) {
+        if (!Objects.equals(oldValue, newValue)) {
+            changes.save(new InventoryChange(a.getId(), null, Type.FIELD_CHANGED, field, oldValue, newValue, Source.PORTAL));
+            setter.accept(newValue);
+        }
+    }
+
+    private void depField(Deployment d, String field, String oldValue, String newValue,
+                          java.util.function.Consumer<String> setter) {
+        if (!Objects.equals(oldValue, newValue)) {
+            changes.save(new InventoryChange(d.getApplication().getId(), d.getId(), Type.FIELD_CHANGED, field,
+                oldValue, newValue, Source.PORTAL));
+            setter.accept(newValue);
+        }
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
+    }
+
+    private static String blankToEmpty(String s) {
+        return s == null ? "" : s.strip();
+    }
+
     /**
      * Imports the inventory workbook. Additive and idempotent: applications match on name + client,
      * deployments on environment + context. New environments are registered, owner moves and changed

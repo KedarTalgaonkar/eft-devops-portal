@@ -1,6 +1,11 @@
 package com.euronet.eft.portal.inventory;
 
 import com.euronet.eft.portal.inventory.InventoryDtos.ApplicationDetail;
+import com.euronet.eft.portal.inventory.InventoryDtos.ApplicationRequest;
+import com.euronet.eft.portal.inventory.InventoryDtos.DeploymentRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import com.euronet.eft.portal.inventory.InventoryDtos.ApplicationSummary;
 import com.euronet.eft.portal.inventory.InventoryDtos.ChangeView;
 import com.euronet.eft.portal.inventory.InventoryDtos.DeploymentView;
@@ -61,9 +66,42 @@ public class InventoryController {
         return service.listDeployments(env);
     }
 
+    @PostMapping("/applications")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add an application (name + client must be unique)")
+    public ApplicationDetail createApplication(@Valid @RequestBody ApplicationRequest request) {
+        return service.createApplication(request);
+    }
+
+    @PutMapping("/applications/{id}")
+    @Operation(summary = "Edit an application's name, client, owner and repositories")
+    public ApplicationDetail updateApplication(@PathVariable long id, @Valid @RequestBody ApplicationRequest request) {
+        return service.updateApplication(id, request);
+    }
+
+    @PostMapping("/applications/{id}/deployments")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add a deployment path (environment + context must be unique per application)")
+    public DeploymentView createDeployment(@PathVariable long id, @Valid @RequestBody DeploymentRequest request) {
+        return service.createDeployment(id, request);
+    }
+
     @PutMapping("/deployments/{id}")
+    @Operation(summary = "Edit every field of a deployment path")
+    public DeploymentView updateDeployment(@PathVariable long id, @Valid @RequestBody DeploymentRequest request) {
+        return service.updateDeployment(id, request);
+    }
+
+    @DeleteMapping("/deployments/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove a deployment path (kept in the change log)")
+    public void deleteDeployment(@PathVariable long id) {
+        service.deleteDeployment(id);
+    }
+
+    @PutMapping("/deployments/{id}/jenkins-job")
     @Operation(summary = "Set the Jenkins job that tracks this deployment (blank = use the naming pattern)")
-    public DeploymentView updateDeployment(@PathVariable long id, @Valid @RequestBody UpdateDeploymentRequest request) {
+    public DeploymentView updateJenkinsJob(@PathVariable long id, @Valid @RequestBody UpdateDeploymentRequest request) {
         return service.updateJenkinsJob(id, request.jenkinsJob());
     }
 

@@ -11,6 +11,11 @@ Phase 1: **build failure explainer** and **executive digest**. Both use Claude t
 | `mock` (default in `docker-compose.yml`) | Built-in sample answers from keyword rules and templates; **nothing leaves the portal** | Demos, development, tests                 |
 | `live`                                   | Claude via the provider in `AI_PROVIDER`                                                | After approval                            |
 
+**The portal does not depend on AI.** Every module, the inventory, sign-in and administration work the same with AI
+off. AI is treated as unavailable (buttons and the digest tab hidden, scheduled digest skipped) when `AI_MODE=off`, or when
+`AI_MODE=live` but the provider credentials are missing. If the provider is down or rate-limited at run time, only the
+AI panel shows a short message; the rest of the page keeps working.
+
 Switching to live needs only environment variables; then `docker compose up -d backend`:
 
 | `AI_PROVIDER` | Also set                                                                                                                                |

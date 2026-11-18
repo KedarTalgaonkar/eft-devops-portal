@@ -97,7 +97,7 @@ public class InventoryChange {
         return changedAt;
     }
 
-    public enum Type {APPLICATION_ADDED, DEPLOYMENT_ADDED, FIELD_CHANGED}
+    public enum Type {APPLICATION_ADDED, DEPLOYMENT_ADDED, DEPLOYMENT_REMOVED, FIELD_CHANGED}
 
     public enum Source {IMPORT, PORTAL}
 }

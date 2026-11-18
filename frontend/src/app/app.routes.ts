@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, roleGuard, signedInGuard } from './core/auth.guard';
+import { authGuard, moduleGuard, roleGuard, signedInGuard } from './core/auth.guard';
 import { PipelineFilters } from './features/pipelines/pipeline-filters';
 
 const T = ' · EFT DevOps · Euronet India';
@@ -31,6 +31,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',
+        canActivate: [moduleGuard('DASHBOARD')],
         loadComponent: () =>
           import('./features/dashboard/dashboard-shell').then((m) => m.DashboardShell),
         children: [
@@ -91,6 +92,7 @@ export const routes: Routes = [
       },
       {
         path: 'pipelines',
+        canActivate: [moduleGuard('PIPELINES')],
         providers: [PipelineFilters],
         loadComponent: () =>
           import('./features/pipelines/pipelines-shell').then((m) => m.PipelinesShell),
@@ -122,6 +124,7 @@ export const routes: Routes = [
       },
       {
         path: 'inventory',
+        canActivate: [moduleGuard('INVENTORY')],
         loadComponent: () =>
           import('./features/inventory/inventory-shell').then((m) => m.InventoryShell),
         children: [
@@ -160,6 +163,7 @@ export const routes: Routes = [
       },
       {
         path: 'github',
+        canActivate: [moduleGuard('SOURCE_CODE')],
         loadComponent: () => import('./features/github/github-shell').then((m) => m.GithubShell),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -185,6 +189,7 @@ export const routes: Routes = [
       },
       {
         path: 'quality',
+        canActivate: [moduleGuard('QUALITY')],
         loadComponent: () => import('./features/quality/quality-shell').then((m) => m.QualityShell),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -204,6 +209,7 @@ export const routes: Routes = [
       },
       {
         path: 'sbom',
+        canActivate: [moduleGuard('SBOM')],
         loadComponent: () => import('./features/sbom/sbom-shell').then((m) => m.SbomShell),
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -222,6 +228,7 @@ export const routes: Routes = [
       },
       {
         path: 'artifacts',
+        canActivate: [moduleGuard('ARTIFACTS')],
         loadComponent: () =>
           import('./features/artifacts/artifacts-shell').then((m) => m.ArtifactsShell),
         children: [
@@ -244,6 +251,7 @@ export const routes: Routes = [
       },
       {
         path: 'monitoring',
+        canActivate: [moduleGuard('MONITORING')],
         loadComponent: () =>
           import('./features/monitoring/monitoring-shell').then((m) => m.MonitoringShell),
         children: [
@@ -291,11 +299,22 @@ export const routes: Routes = [
               import('./features/admin/admin-audit').then((m) => m.AdminAuditPage),
           },
           {
+            path: 'access',
+            title: 'Access groups' + T,
+            loadComponent: () =>
+              import('./features/admin/admin-access').then((m) => m.AdminAccessPage),
+          },
+          {
             path: 'ai',
             title: 'AI usage' + T,
             loadComponent: () => import('./features/admin/admin-ai').then((m) => m.AdminAiPage),
           },
         ],
+      },
+      {
+        path: 'no-access',
+        title: 'No access yet' + T,
+        loadComponent: () => import('./features/auth/no-access-page').then((m) => m.NoAccessPage),
       },
     ],
   },

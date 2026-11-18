@@ -62,10 +62,12 @@
     <app-kpi-card [hint]="o.environments.length + ' environments'" [value]="o.deployments" icon="dns"
                   label="Deployment paths"
                   link="/inventory/deployments" linkHint="Open all deployment paths"/>
+    @if (seesPipelines && o.pipelines) {
     <app-kpi-card [hint]="o.pipelines.totalBuilds + ' builds · ' + o.pipelines.failed + ' failed'" [tone]="(o.pipelines.successRate ?? 0) >= 85 ? 'ok' : (o.pipelines.successRate ?? 0) >= 70 ? 'warn' : 'bad'" [value]="o.pipelines.successRate" icon="rocket_launch"
                   label="Build success · 30 days"
                   link="/pipelines/overview"
                   linkHint="Open delivery pipelines" unit="%"/>
+    }
     <app-kpi-card [hint]="o.services.down + ' down right now'" [linkHint]="o.services.down ? 'Show services that are down' : 'Open service health'"
                   [query]="o.services.down ? { state: 'DOWN' } : null"
                   [tone]="o.services.down ? 'warn' : 'ok'" [value]="o.services.up + ' / ' + (o.services.up + o.services.down + o.services.unknown)"
@@ -127,6 +129,7 @@
               <mat-icon aria-hidden="true">monitor_heart</mat-icon>
               {{ e.up }} up{{ e.down ? ' · ' + e.down + ' down' : '' }}
             </a>
+            @if (seesPipelines) {
             <a [attr.aria-label]="e.name + ' build success ' + (e.successRate ?? 'not available')" [class.warn]="(e.successRate ?? 100) < 80" class="fact"
                routerLink="../environments">
               <mat-icon aria-hidden="true">rocket_launch</mat-icon>
@@ -140,6 +143,7 @@
             </a>
             }
             <span class="fact muted"><mat-icon aria-hidden="true">schedule</mat-icon>{{ e.lastBuildAt ? 'last build ' + ago(e.lastBuildAt) : 'no recent build' }}</span>
+            }
           </div>
         </li>
         }

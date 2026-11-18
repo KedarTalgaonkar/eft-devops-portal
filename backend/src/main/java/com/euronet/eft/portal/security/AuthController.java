@@ -58,10 +58,14 @@ public class AuthController {
     private final CsrfTokenRepository csrfRepository;
     private final AuditService audit;
     private final ObjectProvider<ClientRegistrationRepository> registrations;
+    private final com.euronet.eft.portal.security.access.ModuleAccessService access;
+
     public AuthController(SecurityProperties props, @Qualifier("localAuthenticationManager") AuthenticationManager localAuth,
                           LocalUserService localUsers, SessionAuthenticationStrategy sessionStrategy,
                           SecurityContextRepository contextRepository, CsrfTokenRepository csrfRepository, AuditService audit,
-                          ObjectProvider<ClientRegistrationRepository> registrations) {
+                          ObjectProvider<ClientRegistrationRepository> registrations,
+                          com.euronet.eft.portal.security.access.ModuleAccessService access) {
+        this.access = access;
         this.props = props;
         this.localAuth = localAuth;
         this.localUsers = localUsers;
@@ -78,7 +82,11 @@ public class AuthController {
         csrf.getToken(); // make sure the XSRF-TOKEN cookie is sent before the first change request
         CurrentUser user = CurrentUser.current();
         Providers providers = new Providers(ssoRegistration() != null, props.ssoLabel(), props.localLoginEnabled());
-        return new SessionView(user != null, user == null ? null : UserView.of(user), providers);
+        java.util.Map<String, String> modules = new java.util.LinkedHashMap<>();
+        if (user != null) {
+            access.current().forEach((m, l) -> modules.put(m.name(), l.name()));
+        }
+        return new SessionView(user != null, user == null ? null : UserView.of(user), providers, modules);
     }
 
     @PostMapping("/login")
@@ -181,7 +189,8 @@ public class AuthController {
         return discovered == null ? null : discovered.toString();
     }
 
-    public record SessionView(boolean authenticated, UserView user, Providers providers) {
+    /** {@code modules}: the signed-in user's access per module (NONE, VIEW, EDIT); the SPA hides what is NONE. */
+    public record SessionView(boolean authenticated, UserView user, Providers providers, java.util.Map<String, String> modules) {
     }
 
     public record UserView(String username, String displayName, String email, List<String> roles, String source,

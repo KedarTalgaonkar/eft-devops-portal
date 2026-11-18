@@ -145,7 +145,7 @@ import { ScanView, VulnerabilityView } from './sbom.models';
 })
 export class SbomScansPage {
   readonly scan = input<string>();
-  protected readonly canScan = inject(Auth).can('EDITOR');
+  protected readonly canScan = inject(Auth).canEdit('SBOM');
   protected readonly selected = linkedSignal<number | null>(() =>
     this.scan() ? Number(this.scan()) : null,
   );

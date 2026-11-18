@@ -246,6 +246,8 @@ export class InventoryOverviewPage {
         return 'added to the inventory';
       case 'DEPLOYMENT_ADDED':
         return `new deployment path ${c.newValue ?? ''}`;
+      case 'DEPLOYMENT_REMOVED':
+        return `removed deployment path ${c.oldValue ?? ''}`;
       default:
         return `${c.field}: ${c.oldValue ?? '—'} → ${c.newValue ?? '—'}`;
     }

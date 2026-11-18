@@ -78,6 +78,12 @@ on **Application inventory → Deployment paths**.
 Each sheet is an owner; each row's SIT and UAT blocks become deployments. Importing again updates the rows and never
 deletes anything. Keep the real workbook out of git (it holds internal IPs; `*.xlsx` is git-ignored).
 
+### Add or edit inventory in the portal
+Editors and Admins can also maintain the inventory without Excel, on **Application inventory → Deployment paths**:
+**Add application**, **Add deployment path**, and per row *edit path* (environment, context, URL, Tomcat/Java versions,
+setup status, Jenkins job), *edit application* (name, client, owner, repositories) and *remove path*. Every change is
+recorded on **Change log** with who made it. A later Excel import still updates matching rows.
+
 ### Switch an integration to live data
 
 Set `<TOOL>_MODE=live` plus its URL and token in `.env`, then `docker compose up -d --build backend`.

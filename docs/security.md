@@ -33,11 +33,38 @@ Two ways in, both shown on `/login`; either can be turned off.
 | Role     | Can                                                                                   |
 |----------|---------------------------------------------------------------------------------------|
 | `VIEWER` | Read every dashboard and detail page                                                  |
-| `EDITOR` | + import the inventory, edit Jenkins jobs and repositories, run probes and SBOM scans |
+| `EDITOR` | + import, add, edit and remove inventory (applications, deployment paths), run probes and SBOM scans, publish announcements |
 | `ADMIN`  | + environments, users, audit log, Swagger UI, actuator                                |
 
 Higher roles include the lower ones. The UI hides what a role can't do; the API enforces it (403 and an audit entry).
 SSO users with no mapped role get `PORTAL_DEFAULT_ROLE` (VIEWER); set it empty to refuse them instead.
+
+### Module access by group
+Which modules a person sees is set per **access group** on **Administration → Access groups** (stored in PostgreSQL,
+every change audited as `ACCESS_GROUP_*`). Each group gives each module **Hidden**, **View** or **Edit**.
+
+| Module key | Covers |
+|---|---|
+| `DASHBOARD` | Command centre: overview, issues, environment status, service health, announcements, executive digest |
+| `PIPELINES` | Pipelines, deployments, AI build failure explainer |
+| `SOURCE_CODE`, `ARTIFACTS`, `QUALITY`, `SBOM`, `MONITORING`, `INVENTORY` | The module of the same name |
+
+* **Who is in a group:** SSO groups listed on the group (matched against the ID token's `groups` claim: Entra group
+  object IDs or names, Keycloak group names) and/or usernames (local accounts or individual SSO users).
+  The built-in **Everyone** group applies to all signed-in users and cannot be deleted.
+* **Effective access** = the best level of all the user's groups, **capped by the role** (Viewer: at most View,
+  Editor: up to Edit). **Admins always have full access**, so they cannot lock themselves out.
+* **Default:** Everyone starts with Edit on every module, which (with the role cap) is exactly the behaviour before
+  access groups existed. To restrict, lower Everyone first, then grant through other groups.
+* **Enforced on the server:** every module API (`/api/pipelines/**`, `/api/inventory/**`, …) checks the level
+  (GET needs View, changes need Edit) and returns 403 otherwise. The Command centre leaves out areas, issues and
+  build figures from modules the user may not see. The sidebar and routes follow the same rules.
+* **Takes effect** within 30 seconds; users see the new menu the next time they load the portal.
+* The **executive digest** is a written summary across all areas; give `DASHBOARD` only to people who may read that.
+* **Entra ID:** in the app registration, *Token configuration → Add groups claim* (security groups, emitted as
+  object IDs in the ID token), then paste those IDs into the access group. For users in more than 200 groups Entra
+  sends no list; assign them by username instead, or use app-role assignment of groups.
+* **Local Keycloak:** groups `EFT-Delivery` (user `editor`) and `EFT-QA` (user `viewer`) exist for trying this out.
 
 ### Portal accounts
 

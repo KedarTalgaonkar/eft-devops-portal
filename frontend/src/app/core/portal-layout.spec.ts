@@ -77,7 +77,7 @@ describe('PortalLayout', () => {
     const visible = NAV_GROUPS.filter((g) => !g.requires).flatMap((g) => g.items);
     expect(el.querySelectorAll('nav a.item').length).toBe(visible.length);
     expect(el.textContent).toContain('Pipelines');
-    expect(el.textContent).not.toContain('Users & audit log');
+    expect(el.textContent).not.toContain('Users, access & audit');
     const items = el.querySelectorAll('app-announcement-bar .item');
     expect(items.length).toBe(2);
     expect(items[0].textContent).toContain('IMPS 2.4 release to UAT tonight');
@@ -90,7 +90,7 @@ describe('PortalLayout', () => {
 
   it('adds the administration group for administrators', async () => {
     const el = await render(['ADMIN']);
-    expect(el.textContent).toContain('Users & audit log');
+    expect(el.textContent).toContain('Users, access & audit');
     expect(el.querySelector('.user')?.textContent).toContain('Administrator');
   });
 });

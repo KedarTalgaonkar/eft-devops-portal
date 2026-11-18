@@ -31,6 +31,14 @@
       }
     ]
   },
+  "groups": [
+    {
+      "name": "EFT-Delivery"
+    },
+    {
+      "name": "EFT-QA"
+    }
+  ],
   "clients": [
     {
       "clientId": "eft-portal",
@@ -72,6 +80,20 @@
             "userinfo.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "claim.name": "groups",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     }
@@ -93,6 +115,9 @@
       ],
       "realmRoles": [
         "Portal.Viewer"
+      ],
+      "groups": [
+        "/EFT-QA"
       ]
     },
     {
@@ -111,6 +136,9 @@
       ],
       "realmRoles": [
         "Portal.Editor"
+      ],
+      "groups": [
+        "/EFT-Delivery"
       ]
     },
     {

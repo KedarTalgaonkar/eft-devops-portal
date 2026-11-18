@@ -20,7 +20,7 @@ public class AiException extends RuntimeException {
     }
 
     public static AiException disabled() {
-        return new AiException(HttpStatus.SERVICE_UNAVAILABLE, "AI features are switched off on this portal.");
+        return new AiException(HttpStatus.SERVICE_UNAVAILABLE, "AI features are not available on this portal right now. Everything else works as usual.");
     }
 
     public HttpStatus status() {

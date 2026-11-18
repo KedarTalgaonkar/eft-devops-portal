@@ -396,7 +396,7 @@ const MAX = 500;
   `,
 })
 export class DashboardAnnouncementsPage {
-  protected readonly canEdit = inject(Auth).can('EDITOR');
+  protected readonly canEdit = inject(Auth).canEdit('DASHBOARD');
   protected readonly meta = KIND_META;
   protected readonly kinds = KINDS;
   protected readonly max = MAX;

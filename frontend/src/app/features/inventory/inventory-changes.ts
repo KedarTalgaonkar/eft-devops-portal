@@ -10,6 +10,7 @@ import { ChangeView } from './inventory.models';
 const TYPE_LABEL: Record<ChangeView['changeType'], string> = {
   APPLICATION_ADDED: 'Application added',
   DEPLOYMENT_ADDED: 'Path added',
+  DEPLOYMENT_REMOVED: 'Path removed',
   FIELD_CHANGED: 'Changed',
 };
 
@@ -91,7 +92,7 @@ const TYPE_LABEL: Record<ChangeView['changeType'], string> = {
                 <td>{{ c.changedAt | date: 'dd MMM yyyy, HH:mm' }}</td>
                 <td>
                   <app-status-chip
-                    [status]="c.changeType === 'FIELD_CHANGED' ? 'MEDIUM' : 'SUCCESS'"
+                    [status]="c.changeType === 'FIELD_CHANGED' ? 'MEDIUM' : c.changeType === 'DEPLOYMENT_REMOVED' ? 'HIGH' : 'SUCCESS'"
                     [text]="label[c.changeType]"
                   />
                 </td>

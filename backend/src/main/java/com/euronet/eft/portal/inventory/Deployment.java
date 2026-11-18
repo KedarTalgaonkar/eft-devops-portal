@@ -94,6 +94,14 @@ public class Deployment {
         return contextName;
     }
 
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public void setContextName(String contextName) {
+        this.contextName = contextName == null ? "" : contextName;
+    }
+
     public String getPlatform() {
         return platform;
     }

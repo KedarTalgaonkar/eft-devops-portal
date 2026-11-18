@@ -17,6 +17,7 @@ import {
   EnvironmentStatusRow,
 } from './dashboard.models';
 import { Ai } from '../../core/ai';
+import { Auth } from '../../core/auth';
 import { CardGroup } from '../../shared/card-group';
 
 const AREA_LOGO: Record<AreaStatus['key'], ToolName | null> = {
@@ -71,6 +72,8 @@ interface FootprintRow {
 })
 export class DashboardOverviewPage {
   protected readonly ai = inject(Ai);
+  /** Build figures are part of Pipelines: hidden without access to it. */
+  protected readonly seesPipelines = inject(Auth).canView('PIPELINES');
   protected readonly ago = ago;
   protected readonly logo = AREA_LOGO;
   protected readonly report = httpResource<AttentionReport>(() => apiUrl('dashboard/attention'));

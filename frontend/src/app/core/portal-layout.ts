@@ -33,8 +33,11 @@ export class PortalLayout {
   protected readonly auth = inject(Auth);
   protected readonly navOpen = signal(false);
 
+  /** Sidebar: role-gated groups, and only the modules the user's access groups let them see. */
   protected readonly groups = computed(() =>
-    NAV_GROUPS.filter((g) => !g.requires || this.auth.can(g.requires)),
+    NAV_GROUPS.filter((g) => !g.requires || this.auth.can(g.requires))
+      .map((g) => ({ ...g, items: g.items.filter((i) => !i.module || this.auth.canView(i.module)) }))
+      .filter((g) => g.items.length > 0),
   );
   protected readonly initials = computed(() => {
     const name = this.auth.user()?.displayName ?? '';

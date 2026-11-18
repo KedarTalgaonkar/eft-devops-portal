@@ -1,5 +1,8 @@
 package com.euronet.eft.portal.security;
 
+import com.euronet.eft.portal.security.access.AccessLevel;
+import com.euronet.eft.portal.security.access.ModuleAccessService;
+import com.euronet.eft.portal.security.access.PortalModule;
 import com.euronet.eft.portal.security.audit.AuditService;
 import com.euronet.eft.portal.security.local.LocalUserService;
 import com.euronet.eft.portal.security.oidc.PortalOidcUserService;
@@ -152,6 +155,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProperties props, CsrfTokenRepository csrf,
                                             SecurityContextRepository contextRepository, AuditService audit,
+                                            ModuleAccessService access,
                                             ObjectProvider<ClientRegistrationRepository> registrations) throws Exception {
         http
             .securityContext(c -> c.securityContextRepository(contextRepository))
@@ -176,10 +180,24 @@ public class SecurityConfig {
                 // administrators
                 .requestMatchers("/api/admin/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/environments/**").hasRole("ADMIN")
-                // AI: any signed-in user may ask for a build explanation and rate answers (daily limit applies);
-                // regenerating is checked in the service (EDITOR); writing a digest on demand is for administrators
+                // AI: build explanations belong to Pipelines (asking only needs VIEW; regenerating is checked in the
+                // service, EDITOR); the digest belongs to the Command centre; writing one on demand is for administrators
                 .requestMatchers(HttpMethod.POST, "/api/ai/digest").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/ai/builds/*/*/*/explain", "/api/ai/insights/*/feedback").hasRole("VIEWER")
+                .requestMatchers("/api/ai/builds/**").access(access.module(PortalModule.PIPELINES, AccessLevel.VIEW))
+                .requestMatchers(HttpMethod.GET, "/api/ai/digest", "/api/ai/digest/**").access(access.module(PortalModule.DASHBOARD, AccessLevel.VIEW))
+                .requestMatchers(HttpMethod.POST, "/api/ai/insights/*/feedback").hasRole("VIEWER")
+                // the announcement banner is for everyone; managing announcements is part of the Command centre
+                .requestMatchers(HttpMethod.GET, "/api/announcements/active").hasRole("VIEWER")
+                .requestMatchers("/api/announcements", "/api/announcements/**").access(access.module(PortalModule.DASHBOARD))
+                // modules: reading needs VIEW, changing needs EDIT, from the user's access groups capped by role
+                .requestMatchers("/api/dashboard/**").access(access.module(PortalModule.DASHBOARD))
+                .requestMatchers("/api/pipelines/**").access(access.module(PortalModule.PIPELINES))
+                .requestMatchers("/api/github/**").access(access.module(PortalModule.SOURCE_CODE))
+                .requestMatchers("/api/artifacts/**").access(access.module(PortalModule.ARTIFACTS))
+                .requestMatchers("/api/quality/**").access(access.module(PortalModule.QUALITY))
+                .requestMatchers("/api/sbom/**").access(access.module(PortalModule.SBOM))
+                .requestMatchers("/api/monitoring/**").access(access.module(PortalModule.MONITORING))
+                .requestMatchers("/api/inventory/**").access(access.module(PortalModule.INVENTORY))
                 // editors change data, viewers read
                 .requestMatchers(HttpMethod.POST, "/api/**").hasRole("EDITOR")
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("EDITOR")

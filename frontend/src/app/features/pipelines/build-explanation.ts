@@ -271,7 +271,7 @@ export class BuildExplanationPanel implements OnInit {
   readonly buildNumber = input.required<number>();
   protected readonly category = CATEGORY_LABEL;
   protected readonly owner = OWNER_LABEL;
-  protected readonly canRefresh = inject(Auth).can('EDITOR');
+  protected readonly canRefresh = inject(Auth).canEdit('PIPELINES');
   protected readonly data = signal<BuildExplanation | null>(null);
   protected readonly loading = signal(false);
   protected readonly refreshing = signal(false);

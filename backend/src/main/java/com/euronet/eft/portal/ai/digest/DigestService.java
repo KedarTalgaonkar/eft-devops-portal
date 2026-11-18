@@ -96,7 +96,7 @@ public class DigestService {
      */
     @Scheduled(cron = "${portal.ai.digest.cron:0 0 7 * * MON-FRI}", zone = "${portal.ai.digest.zone:Asia/Kolkata}")
     public void scheduled() {
-        if (!props.enabled() || !props.digest().enabled()) {
+        if (!gateway.available() || !props.digest().enabled()) {
             return;
         }
         try {
